@@ -8,7 +8,7 @@ This project aims to provide the same functionality and API as the original Java
 
 | **Original image**        | **Potrace output**           | **Posterized output**                   |
 |---------------------------|------------------------------|-----------------------------------------|
-| ![](test/sources/yao.jpg) | ![](https://cdn.rawgit.com/tooolbox/node-potrace/9ee822d/test/example-output.svg) | ![](https://cdn.rawgit.com/tooolbox/node-potrace/9ee822d/test/example-output-posterized.svg) |
+| ![](../Examples/exampleOutput.svg) | ![](../Examples/exampleOutput.svg) | ![](../Examples/exampleOutputPosterized.svg) |
 
 (Example image inherited from [online demo of the browser version][potrace-js-demo])
 
