@@ -2,7 +2,7 @@
 
 import re
 import math
-from types.Point import Point
+from .types.Point import Point
 
 attr_regexps = {}
 

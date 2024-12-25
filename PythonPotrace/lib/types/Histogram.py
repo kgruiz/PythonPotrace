@@ -6,7 +6,7 @@
 # environment, just like in the Node.js code.
 
 from PIL import Image
-import utils
+from ..utils import clamp, luminance
 from .Bitmap import Bitmap
 
 COLOR_DEPTH = 256
@@ -52,12 +52,12 @@ def normalizeMinMax(levelMin, levelMax):
         If levelMin is greater than levelMax.
     """
     levelMin = (
-        utils.clamp(int(round(levelMin)), 0, COLOR_RANGE_END)
+        clamp(int(round(levelMin)), 0, COLOR_RANGE_END)
         if isinstance(levelMin, (int, float))
         else 0
     )
     levelMax = (
-        utils.clamp(int(round(levelMax)), 0, COLOR_RANGE_END)
+        clamp(int(round(levelMax)), 0, COLOR_RANGE_END)
         if isinstance(levelMax, (int, float))
         else COLOR_RANGE_END
     )
@@ -178,7 +178,7 @@ class Histogram:
                     val = b
                 else:
                     # Luminance
-                    val = utils.luminance(r, g, b)
+                    val = luminance(r, g, b)
 
                 data[val] += 1
 

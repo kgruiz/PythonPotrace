@@ -90,6 +90,3 @@ def posterize(file, options=None, cb=None):
             cb(e, None, None)
 
     posterizer.loadImage(file, after_load)
-
-# Export the same objects as the JS module does
-__all__ = ['trace', 'posterize', 'Potrace', 'Posterizer']

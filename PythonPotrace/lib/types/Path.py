@@ -2,6 +2,7 @@
 
 
 class Path:
+
     def __init__(self):
         """
         Initialize a Path instance with default attributes.

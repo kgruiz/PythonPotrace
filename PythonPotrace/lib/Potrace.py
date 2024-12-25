@@ -7,14 +7,8 @@
 # exist in your environment, just like in the Node.js code.
 
 from PIL import Image
-from .types.Bitmap import Bitmap
-from .types.Curve import Curve
-from .types.Path import Path
-from .types.Point import Point
-from .types.Quad import Quad
-from .types.Sum import Sum
-from .types.Opti import Opti
-import utils
+from .types import Bitmap, Curve, Path, Point, Quad, Sum, Opti
+from . import utils
 
 class Potrace:
     """

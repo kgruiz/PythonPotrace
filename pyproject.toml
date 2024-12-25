@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PythonPotrace"
+version = "0.1.0"  # Replace with your actual version
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }  # Replace with your info
+]
+description = "A Python implementation of the Potrace algorithm for vectorizing raster images."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",  # Replace with your license if needed
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pillow",
+    "scikit-image",
+    "matplotlib",
+    "pooch",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/yourusername/yourrepository" # Replace with your repo
+"Bug Tracker" = "https://github.com/yourusername/yourrepository/issues" # Replace with your repo
+
+[tool.setuptools.packages.find]
+where = ["PythonPotrace"]
+exclude = ["Tests", "Examples"]

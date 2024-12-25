@@ -4,7 +4,7 @@
 # It uses Pillow (PIL) instead of Jimp to handle image loading and processing.
 
 from .Potrace import Potrace
-import utils
+from . import utils
 
 class Posterizer:
     """

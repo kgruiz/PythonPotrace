@@ -1,8 +1,13 @@
 # Bitmap.py
 
-from Point import Point
-from utils import between
-from Histogram import Histogram
+from .Point import Point
+from ..utils import between
+
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .Histogram import Histogram
 
 class Bitmap:
     """
