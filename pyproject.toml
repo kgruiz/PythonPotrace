@@ -14,24 +14,22 @@ requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
-    "Operating System :: OS Independent",
+    "Operating System :: OS Independent"
 ]
 dependencies = [
     "pillow",
     "scikit-image",
     "matplotlib",
-    "pooch",
+    "pooch"
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/kgruiz/PythonPotrace"
-"Bug Tracker" = "https://github.com/kgruiz/PythonPotrace/issues"
+Homepage = "https://github.com/kgruiz/PythonPotrace"
+BugTracker = "https://github.com/kgruiz/PythonPotrace/issues"
 
 [tool.setuptools]
 include-package-data = true
 
-[tool.setuptools.package-data]
-"*": ["Docs/LICENSE"]
-
 [tool.setuptools.packages.find]
-where = ["PythonPotrace"]
+where = ["."]
+include = ["PythonPotrace", "PythonPotrace.*"]

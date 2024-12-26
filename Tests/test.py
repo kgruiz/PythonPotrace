@@ -5,12 +5,10 @@ from PIL import Image, ImageDraw
 import io
 import sys
 from pathlib import Path
-from lib import index
-from lib import Potrace
-from lib import Posterizer
-from lib.types.Bitmap import Bitmap
-from lib.types.Point import Point
-from lib.types.Histogram import Histogram
+from PythonPotrace import index, Potrace, Posterizer
+from PythonPotrace.types.Bitmap import Bitmap
+from PythonPotrace.types.Point import Point
+from PythonPotrace.types.Histogram import Histogram
 from skimage import data
 import matplotlib.pyplot as plt
 

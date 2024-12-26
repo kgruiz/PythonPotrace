@@ -1,8 +1,8 @@
 # Posterizer.py
 
 import math
-from PythonPotrace.lib.Potrace import Potrace
-from PythonPotrace.lib.utils import (
+from .Potrace import Potrace
+from .utils import (
     between,
     clamp,
     is_number,

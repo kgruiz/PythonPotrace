@@ -1,4 +1,4 @@
-# lib/types/__init__.py
+# PythonPotrace/types/__init__.py
 
 from .Bitmap import Bitmap
 from .Curve import Curve
