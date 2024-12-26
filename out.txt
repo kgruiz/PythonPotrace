@@ -1,0 +1,3026 @@
+# PythonPotrace/lib/Potrace.py
+
+# Potrace.py
+#
+# This is a Python translation of the Potrace.js code, maintaining the same
+# interface and functionality. It uses Pillow (PIL) instead of Jimp to
+# handle image loading and pixel data. The supporting classes and methods
+# (Bitmap, Curve, Path, Point, Quad, Sum, Opti, and utils) are assumed to
+# exist in your environment, just like in the Node.js code.
+
+from PIL import Image
+from .types import Bitmap, Curve, Path, Point, Quad, Sum, Opti
+from . import utils
+
+class Potrace:
+    """
+    Python implementation of the Potrace algorithm for vectorizing raster images.
+
+    Parameters
+    ----------
+    options : dict, optional
+        Dictionary of tracing options. Available options include:
+
+        turnPolicy : str, default 'minority'
+            How to resolve ambiguities in path decomposition.
+        turdSize : int, default 2
+            Suppress speckles of up to this size.
+        alphaMax : float, default 1.0
+            Corner threshold parameter.
+        optCurve : bool, default True
+            Enable curve optimization.
+        optTolerance : float, default 0.2
+            Curve optimization tolerance.
+        threshold : int, default -1
+            Threshold below which color is considered black (0..255).
+        blackOnWhite : bool, default True
+            Specifies colors by which side from threshold should be traced.
+        color : str, default 'auto'
+            Foreground color. Ignored when exporting as <symbol>.
+        background : str, default 'transparent'
+            Background color. Ignored when exporting as <symbol>.
+        width : int, optional
+            Optional width for SVG output. Defaults to image width.
+        height : int, optional
+            Optional height for SVG output. Defaults to image height.
+
+    Attributes
+    ----------
+    _luminanceData : Bitmap
+        Luminance data of the loaded image.
+    _pathlist : list
+        List of paths generated from the image.
+    _imageLoaded : bool
+        Indicates if the image has been loaded.
+    _processed : bool
+        Indicates if the image has been processed.
+    _params : dict
+        Tracing parameters.
+    """
+
+    COLOR_AUTO = 'auto'
+    COLOR_TRANSPARENT = 'transparent'
+    THRESHOLD_AUTO = -1
+
+    TURNPOLICY_BLACK = 'black'
+    TURNPOLICY_WHITE = 'white'
+    TURNPOLICY_LEFT = 'left'
+    TURNPOLICY_RIGHT = 'right'
+    TURNPOLICY_MINORITY = 'minority'
+    TURNPOLICY_MAJORITY = 'majority'
+
+    SUPPORTED_TURNPOLICY_VALUES = [
+        TURNPOLICY_BLACK,
+        TURNPOLICY_WHITE,
+        TURNPOLICY_LEFT,
+        TURNPOLICY_RIGHT,
+        TURNPOLICY_MINORITY,
+        TURNPOLICY_MAJORITY
+    ]
+
+    def __init__(self, options=None):
+        self._luminanceData = None
+        self._pathlist = []
+        self._imageLoaded = False
+        self._processed = False
+
+        self._params = {
+            'turnPolicy': Potrace.TURNPOLICY_MINORITY,
+            'turdSize': 2,
+            'alphaMax': 1,
+            'optCurve': True,
+            'optTolerance': 0.2,
+            'threshold': Potrace.THRESHOLD_AUTO,
+            'blackOnWhite': True,
+            'color': Potrace.COLOR_AUTO,
+            'background': Potrace.COLOR_TRANSPARENT,
+            'width': None,
+            'height': None
+        }
+
+        if options is not None:
+            self.setParameters(options)
+
+    def _bmToPathlist(self):
+        """
+        Create a new Path for every group of black pixels.
+        """
+        threshold = self._params['threshold']
+        blackOnWhite = self._params['blackOnWhite']
+
+        # If threshold is set to auto, try reading from histogram
+        # or default to 128 if no auto threshold is found.
+        if threshold == Potrace.THRESHOLD_AUTO:
+            hist = self._luminanceData.histogram()
+            auto_th = hist.autoThreshold() if hist else None
+            threshold = auto_th if auto_th is not None else 128
+
+        def map_to_black_or_white(lum):
+            # If blackOnWhite: lum > threshold => 0 else 1
+            # Otherwise:       lum < threshold => 1 else 0
+            # Same logic as the JavaScript code.
+            if blackOnWhite:
+                return 0 if lum > threshold else 1
+            else:
+                return 1 if lum < threshold else 0
+
+        # blackMap is a copy of luminanceData, but each pixel is set to
+        # 1 or 0 depending on threshold
+        blackMap = self._luminanceData.copy(map_to_black_or_white)
+
+        currentPoint = Point(0, 0)
+        self._pathlist = []
+
+        def findNext(pt):
+            i = blackMap.pointToIndex(pt)
+            while i < blackMap.size and blackMap.data[i] != 1:
+                i += 1
+            if i < blackMap.size:
+                return blackMap.indexToPoint(i)
+            return None
+
+        def majority(x, y):
+            # same logic as JS
+            for i in range(2, 5):
+                ct = 0
+                for a in range(-i + 1, i):
+                    ct += 1 if blackMap.getValueAt(x + a, y + i - 1) else -1
+                    ct += 1 if blackMap.getValueAt(x + i - 1, y + a - 1) else -1
+                    ct += 1 if blackMap.getValueAt(x + a - 1, y - i) else -1
+                    ct += 1 if blackMap.getValueAt(x - i, y + a) else -1
+                if ct > 0:
+                    return 1
+                elif ct < 0:
+                    return 0
+            return 0
+
+        def findPath(pt):
+            path = Path()
+            x, y = pt.x, pt.y
+            dirx, diry = 0, 1
+
+            # path.sign is '+' if pixel is 1, else '-'
+            path.sign = '+' if blackMap.getValueAt(x, y) else '-'
+
+            while True:
+                path.pt.append(Point(x, y))
+                # update min/max for path
+                if x > path.maxX:
+                    path.maxX = x
+                if x < path.minX:
+                    path.minX = x
+                if y > path.maxY:
+                    path.maxY = y
+                if y < path.minY:
+                    path.minY = y
+                path.len += 1
+
+                x += dirx
+                y += diry
+                path.area -= x * diry
+
+                # If we've looped back to the start point
+                if x == pt.x and y == pt.y:
+                    break
+
+                l = blackMap.getValueAt(
+                    x + (dirx + diry - 1) / 2,
+                    y + (diry - dirx - 1) / 2
+                )
+                r = blackMap.getValueAt(
+                    x + (dirx - diry - 1) / 2,
+                    y + (diry + dirx - 1) / 2
+                )
+
+                # Follows the same logic as the JavaScript code
+                if r and not l:
+                    if (self._params['turnPolicy'] == 'right'
+                        or (self._params['turnPolicy'] == 'black'
+                            and path.sign == '+')
+                        or (self._params['turnPolicy'] == 'white'
+                            and path.sign == '-')
+                        or (self._params['turnPolicy'] == 'majority'
+                            and majority(x, y))
+                        or (self._params['turnPolicy'] == 'minority'
+                            and not majority(x, y))):
+                        tmp = dirx
+                        dirx = -diry
+                        diry = tmp
+                    else:
+                        tmp = dirx
+                        dirx = diry
+                        diry = -tmp
+                elif r:
+                    tmp = dirx
+                    dirx = -diry
+                    diry = tmp
+                elif not l:
+                    tmp = dirx
+                    dirx = diry
+                    diry = -tmp
+
+            return path
+
+        def xorPath(path):
+            # same as JS logic
+            y1 = path.pt[0].y
+            length = path.len
+
+            for i in range(1, length):
+                x = path.pt[i].x
+                y = path.pt[i].y
+                if y != y1:
+                    minY = y1 if y1 < y else y
+                    maxX = path.maxX
+                    for j in range(x, maxX):
+                        idx = blackMap.pointToIndex(Point(j, minY))
+                        blackMap.data[idx] = 0 if blackMap.data[idx] == 1 else 1
+                    y1 = y
+
+        while True:
+            found = findNext(currentPoint)
+            if not found:
+                break
+            path_obj = findPath(found)
+            xorPath(path_obj)
+
+            if path_obj.area > self._params['turdSize']:
+                self._pathlist.append(path_obj)
+
+            # Move currentPoint to the next index after found
+            next_idx = blackMap.pointToIndex(found) + 1
+            if next_idx >= blackMap.size:
+                break
+            currentPoint = blackMap.indexToPoint(next_idx)
+
+    def _processPath(self):
+        """
+        Process the path list created by _bmToPathlist,
+        creating and optimizing Curves.
+        """
+        # These helper functions mirror the original code structure
+        def calcSums(path):
+            path.x0 = path.pt[0].x
+            path.y0 = path.pt[0].y
+            path.sums = []
+            s = path.sums
+            s.append(Sum(0, 0, 0, 0, 0))
+
+            for i in range(path.len):
+                x = path.pt[i].x - path.x0
+                y = path.pt[i].y - path.y0
+                prev_sum = s[i]
+                s.append(Sum(
+                    prev_sum.x + x,
+                    prev_sum.y + y,
+                    prev_sum.xy + x * y,
+                    prev_sum.x2 + x * x,
+                    prev_sum.y2 + y * y
+                ))
+
+        def calcLon(path):
+            """
+            Mirror the calcLon logic from JS.
+            """
+            n = path.len
+            pt = path.pt
+            pivk = [0] * n
+            nc = [0] * n
+            ct = [0, 0, 0, 0]
+            path.lon = [0] * n
+
+            constraint = [Point(), Point()]
+            cur = Point()
+            off = Point()
+            dk = Point()
+
+            k = 0
+            for i in range(n - 1, -1, -1):
+                if (pt[i].x != pt[k].x) and (pt[i].y != pt[k].y):
+                    k = i + 1
+                nc[i] = k
+
+            for i in range(n - 1, -1, -1):
+                ct[0] = ct[1] = ct[2] = ct[3] = 0
+                dir_ = (3 + 3 * (pt[utils.mod(i + 1, n)].x - pt[i].x)
+                        + (pt[utils.mod(i + 1, n)].y - pt[i].y)) // 2
+                ct[dir_] += 1
+
+                constraint[0].x = 0
+                constraint[0].y = 0
+                constraint[1].x = 0
+                constraint[1].y = 0
+
+                k = nc[i]
+                k1 = i
+                foundk = 0
+                while True:
+                    dir_ = (3
+                            + 3 * utils.sign(pt[k].x - pt[k1].x)
+                            + utils.sign(pt[k].y - pt[k1].y)) // 2
+                    ct[dir_] += 1
+
+                    if ct[0] and ct[1] and ct[2] and ct[3]:
+                        pivk[i] = k1
+                        foundk = 1
+                        break
+
+                    cur.x = pt[k].x - pt[i].x
+                    cur.y = pt[k].y - pt[i].y
+
+                    if (utils.xprod(constraint[0], cur) < 0
+                            or utils.xprod(constraint[1], cur) > 0):
+                        break
+
+                    if abs(cur.x) <= 1 and abs(cur.y) <= 1:
+                        pass
+                    else:
+                        off.x = (cur.x
+                                 + (1 if (cur.y >= 0 and (cur.y > 0 or cur.x < 0))
+                                    else -1))
+                        off.y = (cur.y
+                                 + (1 if (cur.x <= 0 and (cur.x < 0 or cur.y < 0))
+                                    else -1))
+                        if utils.xprod(constraint[0], off) >= 0:
+                            constraint[0].x = off.x
+                            constraint[0].y = off.y
+
+                        off.x = (cur.x
+                                 + (1 if (cur.y <= 0 and (cur.y < 0 or cur.x < 0))
+                                    else -1))
+                        off.y = (cur.y
+                                 + (1 if (cur.x >= 0 and (cur.x > 0 or cur.y < 0))
+                                    else -1))
+                        if utils.xprod(constraint[1], off) <= 0:
+                            constraint[1].x = off.x
+                            constraint[1].y = off.y
+
+                    k1 = k
+                    k = nc[k1]
+                    if not utils.cyclic(k, i, k1):
+                        break
+
+                if foundk == 0:
+                    dk.x = utils.sign(pt[k].x - pt[k1].x)
+                    dk.y = utils.sign(pt[k].y - pt[k1].y)
+                    cur.x = pt[k1].x - pt[i].x
+                    cur.y = pt[k1].y - pt[i].y
+
+                    a = utils.xprod(constraint[0], cur)
+                    b = utils.xprod(constraint[0], dk)
+                    c = utils.xprod(constraint[1], cur)
+                    d = utils.xprod(constraint[1], dk)
+
+                    j = 10000000
+
+                    if b < 0:
+                        j = int(a // -b)
+                    if d > 0:
+                        j = min(j, int(-c // d))
+
+                    pivk[i] = utils.mod(k1 + j, n)
+
+            j = pivk[n - 1]
+            path.lon[n - 1] = j
+            for i in range(n - 2, -1, -1):
+                if utils.cyclic(i + 1, pivk[i], j):
+                    j = pivk[i]
+                path.lon[i] = j
+
+            i = n - 1
+            while utils.cyclic(utils.mod(i + 1, n), j, path.lon[i]):
+                path.lon[i] = j
+                i -= 1
+
+        def bestPolygon(path):
+            """
+            Mirror bestPolygon logic from JS code
+            """
+            def penalty3(path, i, j):
+                n = path.len
+                pt = path.pt
+                sums = path.sums
+                r = 0
+                if j >= n:
+                    j -= n
+                    r = 1
+
+                if r == 0:
+                    x = sums[j + 1].x - sums[i].x
+                    y = sums[j + 1].y - sums[i].y
+                    x2 = sums[j + 1].x2 - sums[i].x2
+                    xy = sums[j + 1].xy - sums[i].xy
+                    y2 = sums[j + 1].y2 - sums[i].y2
+                    k = (j + 1) - i
+                else:
+                    x = sums[j + 1].x - sums[i].x + sums[n].x
+                    y = sums[j + 1].y - sums[i].y + sums[n].y
+                    x2 = sums[j + 1].x2 - sums[i].x2 + sums[n].x2
+                    xy = sums[j + 1].xy - sums[i].xy + sums[n].xy
+                    y2 = sums[j + 1].y2 - sums[i].y2 + sums[n].y2
+                    k = (j + 1) - i + n
+
+                px = (pt[i].x + pt[j].x) / 2.0 - pt[0].x
+                py = (pt[i].y + pt[j].y) / 2.0 - pt[0].y
+                ey = pt[j].x - pt[i].x
+                ex = -(pt[j].y - pt[i].y)
+
+                a = (x2 - 2 * x * px) / k + px * px
+                b = (xy - x * py - y * px) / k + px * py
+                c = (y2 - 2 * y * py) / k + py * py
+
+                s = ex * ex * a + 2 * ex * ey * b + ey * ey * c
+                return (s ** 0.5)
+
+            n = path.len
+            pen = [0] * (n + 1)
+            prev = [0] * (n + 1)
+            clip0 = [0] * n
+            clip1 = [0] * (n + 1)
+            seg0 = [0] * (n + 1)
+            seg1 = [0] * (n + 1)
+
+            # local aliases
+            lon = path.lon
+            pt = path.pt
+            s = path.sums
+
+            # The logic is the same as in the JS code
+            for i in range(n):
+                c = utils.mod(lon[utils.mod(i - 1, n)] - 1, n)
+                if c == i:
+                    c = utils.mod(i + 1, n)
+                if c < i:
+                    clip0[i] = n
+                else:
+                    clip0[i] = c
+
+            j = 1
+            for i in range(n):
+                while j <= clip0[i]:
+                    clip1[j] = i
+                    j += 1
+
+            i = 0
+            for j_ in range(n + 1):
+                if i >= n:
+                    break
+                seg0[j_] = i
+                i = clip0[i]
+                if i >= n:
+                    seg0[j_ + 1] = n
+                    m = j_ + 1
+                    break
+            else:
+                m = j_
+
+            i = n
+            for j_ in range(m, 0, -1):
+                seg1[j_] = i
+                i = clip1[i]
+            seg1[0] = 0
+
+            pen[0] = 0
+            for j_ in range(1, m + 1):
+                for i_ in range(seg1[j_], seg0[j_] + 1):
+                    best = -1
+                    for k_ in range(seg0[j_ - 1], clip1[i_] - 1, -1):
+                        thispen = penalty3(path, k_, i_) + pen[k_]
+                        if best < 0 or thispen < best:
+                            prev[i_] = k_
+                            best = thispen
+                    pen[i_] = best
+
+            path.m = m
+            path.po = [0] * m
+            i_ = n
+            j_ = m - 1
+            while i_ > 0:
+                i_ = prev[i_]
+                path.po[j_] = i_
+                j_ -= 1
+
+        def adjustVertices(path):
+            """
+            Mirror the adjustVertices logic
+            """
+            def pointslope(path, i, j, ctr, dir_):
+                n = path.len
+                s = path.sums
+                r = 0
+
+                while j >= n:
+                    j -= n
+                    r += 1
+                while i >= n:
+                    i -= n
+                    r -= 1
+                while j < 0:
+                    j += n
+                    r -= 1
+                while i < 0:
+                    i += n
+                    r += 1
+
+                x = s[j + 1].x - s[i].x + r * s[n].x
+                y = s[j + 1].y - s[i].y + r * s[n].y
+                x2 = s[j + 1].x2 - s[i].x2 + r * s[n].x2
+                xy = s[j + 1].xy - s[i].xy + r * s[n].xy
+                y2 = s[j + 1].y2 - s[i].y2 + r * s[n].y2
+                k = (j + 1 - i) + r * n
+
+                ctr.x = x / k
+                ctr.y = y / k
+
+                a = (x2 - (x * x / k)) / k
+                b = (xy - (x * y / k)) / k
+                c = (y2 - (y * y / k)) / k
+
+                lambda2 = (a + c + ((a - c) ** 2 + 4 * b * b) ** 0.5) / 2.0
+
+                a -= lambda2
+                c -= lambda2
+
+                l = 0.0
+                if abs(a) >= abs(c):
+                    l = (a * a + b * b) ** 0.5
+                    if l != 0:
+                        dir_.x = -b / l
+                        dir_.y = a / l
+                else:
+                    l = (c * c + b * b) ** 0.5
+                    if l != 0:
+                        dir_.x = -c / l
+                        dir_.y = b / l
+                if l == 0:
+                    dir_.x = 0
+                    dir_.y = 0
+
+            m = path.m
+            po = path.po
+            n = path.len
+            pt = path.pt
+            x0 = path.x0
+            y0 = path.y0
+            ctr = [Point() for _ in range(m)]
+            dir_ = [Point() for _ in range(m)]
+            q = [Quad() for _ in range(m)]
+            v = [0, 0, 0]
+
+            path.curve = Curve(m)
+            curve = path.curve
+
+            for i in range(m):
+                j = po[utils.mod(i + 1, m)]
+                j = utils.mod(j - po[i], n) + po[i]
+                pointslope(path, po[i], j, ctr[i], dir_[i])
+
+            for i in range(m):
+                d = dir_[i].x * dir_[i].x + dir_[i].y * dir_[i].y
+                if d == 0.0:
+                    for row in range(3):
+                        for col in range(3):
+                            q[i].data[row * 3 + col] = 0
+                else:
+                    v[0] = dir_[i].y
+                    v[1] = -dir_[i].x
+                    v[2] = -(v[1] * ctr[i].y) - (v[0] * ctr[i].x)
+                    for row in range(3):
+                        for col in range(3):
+                            q[i].data[row * 3 + col] = (v[row] * v[col]) / d
+
+            # Solve Q
+            w = Point()
+            s_ = Point()
+            for i in range(m):
+                Q = Quad()
+                s_.x = pt[po[i]].x - x0
+                s_.y = pt[po[i]].y - y0
+                j = utils.mod(i - 1, m)
+
+                for row in range(3):
+                    for col in range(3):
+                        Q.data[row * 3 + col] = q[j].at(row, col) + q[i].at(row, col)
+
+                while True:
+                    det = Q.at(0, 0) * Q.at(1, 1) - Q.at(0, 1) * Q.at(1, 0)
+                    if det != 0.0:
+                        w.x = (-Q.at(0, 2) * Q.at(1, 1) + Q.at(1, 2) * Q.at(0, 1)) / det
+                        w.y = (Q.at(0, 2) * Q.at(1, 0) - Q.at(1, 2) * Q.at(0, 0)) / det
+                        break
+
+                    # Adjust Q
+                    if Q.at(0, 0) > Q.at(1, 1):
+                        v[0] = -Q.at(0, 1)
+                        v[1] = Q.at(0, 0)
+                    elif Q.at(1, 1) != 0:
+                        v[0] = -Q.at(1, 1)
+                        v[1] = Q.at(1, 0)
+                    else:
+                        v[0] = 1
+                        v[1] = 0
+                    d_ = v[0] * v[0] + v[1] * v[1]
+                    v[2] = -v[1] * s_.y - v[0] * s_.x
+                    for row in range(3):
+                        for col in range(3):
+                            Q.data[row * 3 + col] += (v[row] * v[col]) / d_
+
+                dx = abs(w.x - s_.x)
+                dy = abs(w.y - s_.y)
+                if dx <= 0.5 and dy <= 0.5:
+                    curve.vertex[i] = Point(w.x + x0, w.y + y0)
+                    continue
+
+                # Otherwise, test for min
+                minval = utils.quadform(Q, s_)
+                xmin = s_.x
+                ymin = s_.y
+
+                # check Q(0,0) != 0
+                if Q.at(0, 0) != 0.0:
+                    for z in range(2):
+                        w.y = s_.y - 0.5 + z
+                        w.x = -(Q.at(0, 1) * w.y + Q.at(0, 2)) / Q.at(0, 0)
+                        dx_ = abs(w.x - s_.x)
+                        cand = utils.quadform(Q, w)
+                        if dx_ <= 0.5 and cand < minval:
+                            minval = cand
+                            xmin = w.x
+                            ymin = w.y
+
+                if Q.at(1, 1) != 0.0:
+                    for z in range(2):
+                        w.x = s_.x - 0.5 + z
+                        w.y = -(Q.at(1, 0) * w.x + Q.at(1, 2)) / Q.at(1, 1)
+                        dy_ = abs(w.y - s_.y)
+                        cand = utils.quadform(Q, w)
+                        if dy_ <= 0.5 and cand < minval:
+                            minval = cand
+                            xmin = w.x
+                            ymin = w.y
+
+                # corners
+                for l_ in range(2):
+                    for k_ in range(2):
+                        w.x = s_.x - 0.5 + l_
+                        w.y = s_.y - 0.5 + k_
+                        cand = utils.quadform(Q, w)
+                        if cand < minval:
+                            minval = cand
+                            xmin = w.x
+                            ymin = w.y
+
+                curve.vertex[i] = Point(xmin + x0, ymin + y0)
+
+        def reversePath(path):
+            """
+            Reverse the path if path.sign == '-'
+            """
+            curve = path.curve
+            m = curve.n
+            v_ = curve.vertex
+            i, j = 0, m - 1
+            while i < j:
+                tmp = v_[i]
+                v_[i] = v_[j]
+                v_[j] = tmp
+                i += 1
+                j -= 1
+
+        def smooth(path):
+            """
+            Mirror the smooth function in JS
+            """
+            curve = path.curve
+            m = curve.n
+            for i in range(m):
+                j = utils.mod(i + 1, m)
+                k = utils.mod(i + 2, m)
+                p4 = utils.interval(0.5, curve.vertex[k], curve.vertex[j])
+
+                denom = utils.ddenom(curve.vertex[i], curve.vertex[k])
+                if denom != 0.0:
+                    dd = utils.dpara(curve.vertex[i],
+                                     curve.vertex[j],
+                                     curve.vertex[k]) / denom
+                    dd = abs(dd)
+                    alpha = (1 - 1.0 / dd) if dd > 1 else 0
+                    alpha = alpha / 0.75
+                else:
+                    alpha = 4 / 3.0
+
+                curve.alpha0[j] = alpha
+
+                if alpha >= self._params['alphaMax']:
+                    curve.tag[j] = 'CORNER'
+                    curve.c[3 * j + 1] = curve.vertex[j]
+                    curve.c[3 * j + 2] = p4
+                else:
+                    if alpha < 0.55:
+                        alpha = 0.55
+                    elif alpha > 1:
+                        alpha = 1
+                    p2 = utils.interval(0.5 + 0.5 * alpha,
+                                        curve.vertex[i],
+                                        curve.vertex[j])
+                    p3 = utils.interval(0.5 + 0.5 * alpha,
+                                        curve.vertex[k],
+                                        curve.vertex[j])
+                    curve.tag[j] = 'CURVE'
+                    curve.c[3 * j + 0] = p2
+                    curve.c[3 * j + 1] = p3
+                    curve.c[3 * j + 2] = p4
+                curve.alpha[j] = alpha
+                curve.beta[j] = 0.5
+
+            curve.alphaCurve = 1
+
+        def optiCurve(path):
+            """
+            Mirror the optiCurve logic
+            """
+            curve = path.curve
+            m = curve.n
+            vertex = curve.vertex
+            pt_ = [0] * (m + 1)
+            pen_ = [0] * (m + 1)
+            length_ = [0] * (m + 1)
+            opt_ = [None] * (m + 1)
+
+            o = Opti()
+            convc = [0] * m
+            areac = [0] * (m + 1)
+            # Fill convc
+            for i in range(m):
+                if curve.tag[i] == 'CURVE':
+                    convc[i] = utils.sign(utils.dpara(
+                        vertex[utils.mod(i - 1, m)],
+                        vertex[i],
+                        vertex[utils.mod(i + 1, m)]
+                    ))
+                else:
+                    convc[i] = 0
+
+            # compute area
+            area = 0.0
+            areac[0] = 0.0
+            p0 = vertex[0]
+            for i in range(m):
+                i1 = utils.mod(i + 1, m)
+                if curve.tag[i1] == 'CURVE':
+                    alpha = curve.alpha[i1]
+                    area += (0.3 * alpha * (4 - alpha)
+                             * utils.dpara(curve.c[i * 3 + 2],
+                                           vertex[i1],
+                                           curve.c[i1 * 3 + 2]) / 2)
+                    area += (utils.dpara(p0,
+                                         curve.c[i * 3 + 2],
+                                         curve.c[i1 * 3 + 2]) / 2)
+                areac[i + 1] = area
+
+            pt_[0] = -1
+            pen_[0] = 0
+            length_[0] = 0
+
+            def opti_penalty(path, i_, j_, res, opttolerance, convc_, areac_):
+                if i_ == j_:
+                    return 1
+                k_ = i_
+                i1_ = utils.mod(i_ + 1, m)
+                k1_ = utils.mod(k_ + 1, m)
+                conv = convc_[k1_]
+                if conv == 0:
+                    return 1
+                d_ = utils.ddist(vertex[i_], vertex[i1_])
+                # same logic in the for loop
+                while k_ != j_:
+                    k1_ = utils.mod(k_ + 1, m)
+                    k2_ = utils.mod(k_ + 2, m)
+                    if convc_[k1_] != conv:
+                        return 1
+                    if utils.sign(utils.cprod(vertex[i_],
+                                              vertex[i1_],
+                                              vertex[k1_],
+                                              vertex[k2_])) != conv:
+                        return 1
+                    if utils.iprod1(vertex[i_],
+                                    vertex[i1_],
+                                    vertex[k1_],
+                                    vertex[k2_]) < (d_ * utils.ddist(vertex[k1_],
+                                                                      vertex[k2_])
+                                                    * -0.999847695156):
+                        return 1
+                    k_ = k1_
+                    if k_ == j_:
+                        break
+
+                p0_ = curve.c[utils.mod(i_, m) * 3 + 2].copy()
+                p1_ = vertex[utils.mod(i_ + 1, m)].copy()
+                p2_ = vertex[utils.mod(j_, m)].copy()
+                p3_ = curve.c[utils.mod(j_, m) * 3 + 2].copy()
+
+                area_ = areac_[j_] - areac_[i_]
+                area_ -= (utils.dpara(vertex[0],
+                                      curve.c[i_ * 3 + 2],
+                                      curve.c[j_ * 3 + 2]) / 2)
+                if i_ >= j_:
+                    area_ += areac_[m]
+
+                A1 = utils.dpara(p0_, p1_, p2_)
+                A2 = utils.dpara(p0_, p1_, p3_)
+                A3 = utils.dpara(p0_, p2_, p3_)
+                A4 = A1 + A3 - A2
+
+                if A2 == A1:
+                    return 1
+
+                t_ = A3 / (A3 - A4)
+                s_ = A2 / (A2 - A1)
+                A_ = A2 * t_ / 2.0
+
+                if A_ == 0.0:
+                    return 1
+
+                R_ = area_ / A_
+                alpha_ = 2 - ((4 - R_ / 0.3) ** 0.5)
+                res.c[0] = utils.interval(t_ * alpha_, p0_, p1_)
+                res.c[1] = utils.interval(s_ * alpha_, p3_, p2_)
+                res.alpha = alpha_
+                res.t = t_
+                res.s = s_
+
+                p1_ = res.c[0].copy()
+                p2_ = res.c[1].copy()
+
+                res.pen = 0
+
+                # check all points on the path
+                k_ = utils.mod(i_ + 1, m)
+                while True:
+                    k1_ = utils.mod(k_ + 1, m)
+                    if k_ == j_:
+                        break
+                    t_ = utils.tangent(p0_, p1_, p2_, p3_, vertex[k_], vertex[k1_])
+                    if t_ < -0.5:
+                        return 1
+                    pt__ = utils.bezier(t_, p0_, p1_, p2_, p3_)
+                    d__ = utils.ddist(vertex[k_], vertex[k1_])
+                    if d__ == 0.0:
+                        return 1
+                    d1_ = utils.dpara(vertex[k_], vertex[k1_], pt__) / d__
+                    if abs(d1_) > opttolerance:
+                        return 1
+                    if (utils.iprod(vertex[k_], vertex[k1_], pt__) < 0
+                            or utils.iprod(vertex[k1_], vertex[k_], pt__) < 0):
+                        return 1
+                    res.pen += d1_ * d1_
+
+                    k_ = k1_
+                    if k_ == j_:
+                        break
+
+                # check all control points
+                k_ = i_
+                while True:
+                    k1_ = utils.mod(k_ + 1, m)
+                    if k_ == j_:
+                        break
+                    t_ = utils.tangent(p0_, p1_, p2_, p3_,
+                                       curve.c[k_ * 3 + 2],
+                                       curve.c[k1_ * 3 + 2])
+                    if t_ < -0.5:
+                        return 1
+                    pt__ = utils.bezier(t_, p0_, p1_, p2_, p3_)
+                    d__ = utils.ddist(curve.c[k_ * 3 + 2],
+                                      curve.c[k1_ * 3 + 2])
+                    if d__ == 0.0:
+                        return 1
+                    d1_ = utils.dpara(curve.c[k_ * 3 + 2],
+                                      curve.c[k1_ * 3 + 2],
+                                      pt__) / d__
+                    d2_ = (utils.dpara(curve.c[k_ * 3 + 2],
+                                       curve.c[k1_ * 3 + 2],
+                                       vertex[k1_]) / d__)
+                    d2_ *= 0.75 * curve.alpha[k1_]
+                    if d2_ < 0:
+                        d1_ = -d1_
+                        d2_ = -d2_
+                    if d1_ < d2_ - opttolerance:
+                        return 1
+                    if d1_ < d2_:
+                        res.pen += (d1_ - d2_) * (d1_ - d2_)
+
+                    k_ = k1_
+                    if k_ == j_:
+                        break
+
+                return 0
+
+            for j_ in range(1, m + 1):
+                pt_[j_] = j_ - 1
+                pen_[j_] = pen_[j_ - 1]
+                length_[j_] = length_[j_ - 1] + 1
+
+                i_ = j_ - 2
+                while i_ >= 0:
+                    r_ = opti_penalty(path, i_, utils.mod(j_, m), o,
+                                      self._params['optTolerance'],
+                                      convc, areac)
+                    if r_ != 0:
+                        break
+                    if (length_[j_] > length_[i_] + 1
+                       or (length_[j_] == length_[i_] + 1
+                           and pen_[j_] > pen_[i_] + o.pen)):
+                        pt_[j_] = i_
+                        pen_[j_] = pen_[i_] + o.pen
+                        length_[j_] = length_[i_] + 1
+                        opt_[j_] = o
+                        o = Opti()
+                    i_ -= 1
+
+            om = length_[m]
+            ocurve = Curve(om)
+            s_ar = [0] * om
+            t_ar = [0] * om
+
+            j_ = m
+            for i_ in range(om - 1, -1, -1):
+                if pt_[j_] == j_ - 1:
+                    ocurve.tag[i_] = curve.tag[utils.mod(j_, m)]
+                    ocurve.c[i_ * 3 + 0] = curve.c[utils.mod(j_, m) * 3 + 0]
+                    ocurve.c[i_ * 3 + 1] = curve.c[utils.mod(j_, m) * 3 + 1]
+                    ocurve.c[i_ * 3 + 2] = curve.c[utils.mod(j_, m) * 3 + 2]
+                    ocurve.vertex[i_] = curve.vertex[utils.mod(j_, m)]
+                    ocurve.alpha[i_] = curve.alpha[utils.mod(j_, m)]
+                    ocurve.alpha0[i_] = curve.alpha0[utils.mod(j_, m)]
+                    ocurve.beta[i_] = curve.beta[utils.mod(j_, m)]
+                    s_ar[i_] = 1.0
+                    t_ar[i_] = 1.0
+                else:
+                    ocurve.tag[i_] = 'CURVE'
+                    ocurve.c[i_ * 3 + 0] = opt_[j_].c[0]
+                    ocurve.c[i_ * 3 + 1] = opt_[j_].c[1]
+                    ocurve.c[i_ * 3 + 2] = curve.c[utils.mod(j_, m) * 3 + 2]
+                    ocurve.vertex[i_] = utils.interval(
+                        opt_[j_].s,
+                        curve.c[utils.mod(j_, m) * 3 + 2],
+                        vertex[utils.mod(j_, m)]
+                    )
+                    ocurve.alpha[i_] = opt_[j_].alpha
+                    ocurve.alpha0[i_] = opt_[j_].alpha
+                    s_ar[i_] = opt_[j_].s
+                    t_ar[i_] = opt_[j_].t
+                j_ = pt_[j_]
+
+            for i_ in range(om):
+                i1_ = utils.mod(i_ + 1, om)
+                ocurve.beta[i_] = s_ar[i_] / (s_ar[i_] + t_ar[i1_])
+            ocurve.alphaCurve = 1
+            path.curve = ocurve
+
+        for path in self._pathlist:
+            calcSums(path)
+            calcLon(path)
+            bestPolygon(path)
+            adjustVertices(path)
+
+            if path.sign == '-':
+                reversePath(path)
+
+            smooth(path)
+
+            if self._params['optCurve']:
+                optiCurve(path)
+
+    def _validateParameters(self, params):
+        if params is None:
+            return
+
+        if ('turnPolicy' in params
+                and params['turnPolicy'] not in self.SUPPORTED_TURNPOLICY_VALUES):
+            allowed = "', '".join(self.SUPPORTED_TURNPOLICY_VALUES)
+            raise ValueError(f"Bad turnPolicy value. Allowed values are: '{allowed}'")
+
+        if ('threshold' in params
+                and params['threshold'] is not None
+                and params['threshold'] != Potrace.THRESHOLD_AUTO):
+            th = params['threshold']
+            if not isinstance(th, (int, float)) or not (0 <= th <= 255):
+                raise ValueError(
+                    "Bad threshold value. Expected an integer in range 0..255"
+                )
+
+        if ('optCurve' in params
+                and params['optCurve'] is not None
+                and not isinstance(params['optCurve'], bool)):
+            raise ValueError("'optCurve' must be a boolean")
+
+    def _processLoadedImage(self, image):
+        """
+        Process the loaded Pillow image and store its luminance data in self._luminanceData.
+        This mirrors the _processLoadedImage in the JS code, but uses Python/Pillow methods.
+        """
+        width, height = image.size
+        bitmap = Bitmap(width, height)
+        pixels = image.load()  # returns a pixel access object
+
+        # We want background underneath non-opaque regions to be white
+        for y in range(height):
+            for x in range(width):
+                # pixel might be RGBA
+                r, g, b, a = (0, 0, 0, 255)
+                px = pixels[x, y]
+                if len(px) == 4:
+                    r, g, b, a = px
+                else:
+                    # If there's no alpha, assume full opacity
+                    r, g, b = px
+                    a = 255
+
+                opacity = a / 255.0
+                r_ = 255 + (r - 255) * opacity
+                g_ = 255 + (g - 255) * opacity
+                b_ = 255 + (b - 255) * opacity
+
+                idx = y * width + x
+                bitmap.data[idx] = utils.luminance(r_, g_, b_)
+
+        self._luminanceData = bitmap
+        self._imageLoaded = True
+
+    def loadImage(self, target, callback):
+        """
+        Load an image for processing.
+
+        Parameters
+        ----------
+        target : str or PIL.Image.Image
+            Source image. Can be a file path, file-like object, or a PIL Image instance.
+        callback : callable
+            Callback function with signature (error).
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        Exception
+            If the image cannot be processed.
+        """
+        # We don't exactly replicate the "jobId" because Python isn't callback-based
+        self._imageLoaded = False
+
+        if isinstance(target, Image.Image):
+            # We already have a Pillow image
+            try:
+                self._processLoadedImage(target)
+                self._imageLoaded = True
+                callback(None)
+            except Exception as e:
+                callback(e)
+        else:
+            # Attempt to open as path or file-like object
+            try:
+                with Image.open(target) as img:
+                    # If needed, ensure RGBA
+                    img = img.convert("RGBA")
+                    self._processLoadedImage(img)
+                    self._imageLoaded = True
+                    callback(None)
+            except Exception as e:
+                callback(e)
+
+    def setParameters(self, newParams):
+        """
+        Update tracing parameters.
+
+        Parameters
+        ----------
+        newParams : dict
+            Dictionary of new tracing parameters to update.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If any of the provided parameters are invalid.
+        """
+        self._validateParameters(newParams)
+
+        for key in self._params:
+            if key in newParams:
+                old_val = self._params[key]
+                self._params[key] = newParams[key]
+                if (old_val != self._params[key]
+                        and key not in ['color', 'background']):
+                    self._processed = False
+
+    def getPathTag(self, fillColor=None, scale=None):
+        """
+        Generates just the <path> tag without the rest of the SVG file.
+
+        :param fillColor: optional color override.
+        :param scale: dict with keys 'x' and 'y' to scale the paths, or None.
+        :return: string of a <path> element.
+        """
+        if fillColor is None:
+            fillColor = self._params['color']
+
+        if fillColor == Potrace.COLOR_AUTO:
+            fillColor = 'black' if self._params['blackOnWhite'] else 'white'
+
+        if not self._imageLoaded:
+            raise RuntimeError("Image should be loaded first")
+
+        if not self._processed:
+            self._bmToPathlist()
+            self._processPath()
+            self._processed = True
+
+        path_data = []
+        for path in self._pathlist:
+            path_data.append(utils.renderCurve(path.curve, scale))
+
+        tag = '<path d="{}" stroke="none" fill="{}" fill-rule="evenodd"/>'.format(
+            " ".join(path_data),
+            fillColor
+        )
+        return tag
+
+    def getSymbol(self, id_):
+        """
+        Returns a <symbol> tag. Always has a viewBox specified and comes with no fill color,
+        so it can be changed with a <use> tag.
+
+        :param id_: Symbol ID for the SVG
+        :return: string of a <symbol> element.
+        """
+        w = self._luminanceData.width
+        h = self._luminanceData.height
+        return (
+            f'<symbol viewBox="0 0 {w} {h}" id="{id_}">'
+            + self.getPathTag("")
+            + '</symbol>'
+        )
+
+    def getSVG(self):
+        """
+        Generate an SVG representation of the processed image.
+
+        Returns
+        -------
+        str
+            SVG content as a string.
+
+        Raises
+        ------
+        RuntimeError
+            If no image data is available for SVG generation.
+        """
+        if self._luminanceData is None:
+            raise RuntimeError("No image data to create SVG from.")
+
+        w = self._params['width'] if self._params['width'] else self._luminanceData.width
+        h = self._params['height'] if self._params['height'] else self._luminanceData.height
+
+        scale = {
+            'x': (self._params['width'] / self._luminanceData.width)
+                  if self._params['width'] else 1,
+            'y': (self._params['height'] / self._luminanceData.height)
+                  if self._params['height'] else 1
+        }
+
+        background = self._params['background']
+        svg = []
+        svg.append(f'<svg xmlns="http://www.w3.org/2000/svg" '
+                   f'width="{w}" height="{h}" '
+                   f'viewBox="0 0 {w} {h}" version="1.1">')
+
+        if background != Potrace.COLOR_TRANSPARENT:
+            svg.append(f'\t<rect x="0" y="0" width="100%" height="100%" fill="{background}" />')
+
+        svg.append("\t" + self.getPathTag(self._params['color'], scale))
+        svg.append('</svg>')
+        return "\n".join(svg)
+
+
+# PythonPotrace/lib/index.py
+
+# index.py
+#
+# This Python code mirrors the interface and callbacks of the original index.js.
+# Pillow is used for image handling instead of Jimp.
+
+from .Potrace import Potrace
+from .Posterizer import Posterizer
+
+def trace(file, options=None, cb=None):
+    """
+    Trace an input image and convert it to SVG format.
+
+    Parameters
+    ----------
+    file : str or PIL.Image.Image
+        Source image. Can be a file path or a PIL Image instance.
+    options : dict, optional
+        Dictionary of tracing options. Defaults to an empty dictionary.
+    cb : callable, optional
+        Callback function with signature (error, svg_content, potrace_instance).
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    If only `file` and `cb` are provided, `options` defaults to an empty dictionary.
+    """
+    # Imitate the JavaScript argument handling: if called with (file, cb),
+    # then shift cb to the second argument and set options = {}
+    if cb is None and callable(options):
+        cb = options
+        options = {}
+
+    if options is None:
+        options = {}
+
+    potrace = Potrace(options)
+
+    def after_load(err):
+        if err is not None:
+            return cb(err, None, None)
+        try:
+            svg = potrace.getSVG()
+            cb(None, svg, potrace)
+        except Exception as e:
+            cb(e, None, None)
+
+    potrace.loadImage(file, after_load)
+
+def posterize(file, options=None, cb=None):
+    """
+    Apply posterization to the input image.
+
+    Parameters
+    ----------
+    file : str or PIL.Image.Image
+        Source image. Can be a file path or a PIL Image instance.
+    options : dict, optional
+        Dictionary of posterization options. Defaults to an empty dictionary.
+    cb : callable, optional
+        Callback function with signature (error, posterized_image, posterizer_instance).
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    If only `file` and `cb` are provided, `options` defaults to an empty dictionary.
+    """
+    # Same argument shifting logic
+    if cb is None and callable(options):
+        cb = options
+        options = {}
+
+    if options is None:
+        options = {}
+
+    posterizer = Posterizer(options)
+
+    def after_load(err):
+        if err is not None:
+            return cb(err, None, None)
+        try:
+            svg = posterizer.getSVG()
+            cb(None, svg, posterizer)
+        except Exception as e:
+            cb(e, None, None)
+
+    posterizer.loadImage(file, after_load)
+
+# PythonPotrace/lib/utils.py
+
+# utils.py
+
+import re
+import math
+from .types.Point import Point
+
+attr_regexps = {}
+
+def get_attr_regexp(attr_name):
+    """
+    Get or compile a regular expression for the given HTML attribute name.
+
+    :param attr_name: The name of the HTML attribute.
+    :return: Compiled regular expression object.
+    """
+    if attr_name in attr_regexps:
+        return attr_regexps[attr_name]
+
+    # The JavaScript regex: ' ' + attrName + '="((?:\\\\(?=")"|[^"])+)"'
+    # Translated to Python regex
+    pattern = r' ' + re.escape(attr_name) + r'="((?:\\(?=")|[^"])+)"'
+    attr_regexps[attr_name] = re.compile(pattern, re.IGNORECASE)
+    return attr_regexps[attr_name]
+
+def set_html_attribute(html, attr_name, value):
+    """
+    Set or update an HTML attribute in the given HTML string.
+
+    :param html: The HTML string.
+    :param attr_name: The name of the attribute to set.
+    :param value: The value to set for the attribute.
+    :return: Updated HTML string.
+    """
+    attr = f' {attr_name}="{value}"'
+
+    if f' {attr_name}="' not in html:
+        # Add the attribute to the opening tag
+        # Equivalent to JS: html.replace(/<[a-z]+/i, function(beginning) { return beginning + attr; });
+        def replacer(match):
+            return match.group(0) + attr
+        html = re.sub(r'<[a-z]+', replacer, html, flags=re.IGNORECASE)
+    else:
+        # Replace the existing attribute value
+        html = get_attr_regexp(attr_name).sub(attr, html)
+
+    return html
+
+def fixed(number):
+    """
+    Format a number to three decimal places, removing trailing '.000' if present.
+
+    :param number: The number to format.
+    :return: Formatted string.
+    """
+    formatted = f"{number:.3f}"
+    return formatted[:-4] if formatted.endswith('.000') else formatted
+
+def mod(a, n):
+    """
+    Compute a modulo n, handling negative values appropriately.
+
+    :param a: The dividend.
+    :param n: The divisor.
+    :return: Result of a modulo n.
+    """
+    if a >= n:
+        return a % n
+    elif a >= 0:
+        return a
+    else:
+        return n - 1 - ((-1 - a) % n)
+
+def xprod(p1, p2):
+    """
+    Compute the cross product of two points treated as vectors.
+
+    :param p1: First Point.
+    :param p2: Second Point.
+    :return: Cross product value.
+    """
+    return p1.x * p2.y - p1.y * p2.x
+
+def cyclic(a, b, c):
+    """
+    Determine if b is in the cyclic interval [a, c).
+
+    :param a: Start of interval.
+    :param b: Value to check.
+    :param c: End of interval.
+    :return: True if b is within the interval, False otherwise.
+    """
+    if a <= c:
+        return a <= b < c
+    else:
+        return a <= b or b < c
+
+def sign(i):
+    """
+    Determine the sign of a number.
+
+    :param i: The number.
+    :return: 1 if positive, -1 if negative, 0 if zero.
+    """
+    return 1 if i > 0 else (-1 if i < 0 else 0)
+
+def quadform(Q, w):
+    """
+    Compute the quadratic form w^T Q w.
+
+    :param Q: Quad instance.
+    :param w: Point instance treated as a vector with homogeneous coordinate.
+    :return: Quadratic form value.
+    """
+    v = [w.x, w.y, 1]
+    sum_val = 0.0
+
+    for i in range(3):
+        for j in range(3):
+            sum_val += v[i] * Q.at(i, j) * v[j]
+    return sum_val
+
+def interval(lambda_, a, b):
+    """
+    Compute the linear interpolation between points a and b.
+
+    :param lambda_: The interpolation parameter (0 <= lambda_ <= 1).
+    :param a: Start Point.
+    :param b: End Point.
+    :return: Interpolated Point.
+    """
+    res = Point()
+    res.x = a.x + lambda_ * (b.x - a.x)
+    res.y = a.y + lambda_ * (b.y - a.y)
+    return res
+
+def dorth_infty(p0, p2):
+    """
+    Compute the direction orthogonal to the vector from p0 to p2.
+
+    :param p0: Starting Point.
+    :param p2: Ending Point.
+    :return: Orthogonal Point.
+    """
+    r = Point()
+    r.y = sign(p2.x - p0.x)
+    r.x = -sign(p2.y - p0.y)
+    return r
+
+def ddenom(p0, p2):
+    """
+    Compute the denominator for certain calculations.
+
+    :param p0: Starting Point.
+    :param p2: Ending Point.
+    :return: Denominator value.
+    """
+    r = dorth_infty(p0, p2)
+    return r.y * (p2.x - p0.x) - r.x * (p2.y - p0.y)
+
+def dpara(p0, p1, p2):
+    """
+    Compute the determinant to check for parallelism.
+
+    :param p0: Origin Point.
+    :param p1: Second Point.
+    :param p2: Third Point.
+    :return: Determinant value.
+    """
+    x1 = p1.x - p0.x
+    y1 = p1.y - p0.y
+    x2 = p2.x - p0.x
+    y2 = p2.y - p0.y
+    return x1 * y2 - x2 * y1
+
+def cprod(p0, p1, p2, p3):
+    """
+    Compute the cross product for two vectors defined by points.
+
+    :param p0: First Point of the first vector.
+    :param p1: Second Point of the first vector.
+    :param p2: First Point of the second vector.
+    :param p3: Second Point of the second vector.
+    :return: Cross product value.
+    """
+    x1 = p1.x - p0.x
+    y1 = p1.y - p0.y
+    x2 = p3.x - p2.x
+    y2 = p3.y - p2.y
+    return x1 * y2 - x2 * y1
+
+def iprod(p0, p1, p2):
+    """
+    Compute the inner product of two vectors defined by points.
+
+    :param p0: Origin Point.
+    :param p1: Endpoint of the first vector.
+    :param p2: Endpoint of the second vector.
+    :return: Inner product value.
+    """
+    x1 = p1.x - p0.x
+    y1 = p1.y - p0.y
+    x2 = p2.x - p0.x
+    y2 = p2.y - p0.y
+    return x1 * x2 + y1 * y2
+
+def iprod1(p0, p1, p2, p3):
+    """
+    Compute the inner product of two vectors defined by points.
+
+    :param p0: Origin Point of the first vector.
+    :param p1: Endpoint of the first vector.
+    :param p2: Origin Point of the second vector.
+    :param p3: Endpoint of the second vector.
+    :return: Inner product value.
+    """
+    x1 = p1.x - p0.x
+    y1 = p1.y - p0.y
+    x2 = p3.x - p2.x
+    y2 = p3.y - p2.y
+    return x1 * x2 + y1 * y2
+
+def ddist(p, q):
+    """
+    Compute the Euclidean distance between two points.
+
+    :param p: First Point.
+    :param q: Second Point.
+    :return: Distance value.
+    """
+    return math.sqrt((p.x - q.x) ** 2 + (p.y - q.y) ** 2)
+
+def luminance(r, g, b):
+    """
+    Calculate the luminance from RGB values.
+
+    :param r: Red component.
+    :param g: Green component.
+    :param b: Blue component.
+    :return: Luminance value as an integer.
+    """
+    return round(0.2126 * r + 0.7153 * g + 0.0721 * b)
+
+def between(val, min_val, max_val):
+    """
+    Check if a value is between min_val and max_val, inclusive.
+
+    :param val: The value to check.
+    :param min_val: The minimum bound.
+    :param max_val: The maximum bound.
+    :return: True if val is between min_val and max_val, else False.
+    """
+    return min_val <= val <= max_val
+
+def clamp(val, min_val, max_val):
+    """
+    Clamp a value between min_val and max_val.
+
+    :param val: The value to clamp.
+    :param min_val: The minimum bound.
+    :param max_val: The maximum bound.
+    :return: Clamped value.
+    """
+    return max(min_val, min(val, max_val))
+
+def is_number(val):
+    """
+    Check if a value is a number (int or float).
+
+    :param val: The value to check.
+    :return: True if val is a number, else False.
+    """
+    return isinstance(val, (int, float))
+
+def render_curve(curve, scale=None):
+    """
+    Generates path instructions for a given curve.
+
+    :param curve: Curve instance.
+    :param scale: Optional scaling factor as a dictionary with 'x' and 'y'. Defaults to 1 for both axes.
+    :return: SVG path string.
+    """
+    if scale is None:
+        scale = {'x': 1, 'y': 1}
+
+    starting_point = curve.c[(curve.n - 1) * 3 + 2]
+
+    path = [
+        f"M {fixed(starting_point.x * scale['x'])} {fixed(starting_point.y * scale['y'])}"
+    ]
+
+    for i, tag in enumerate(curve.tag):
+        i3 = i * 3
+        p0 = curve.c[i3]
+        p1 = curve.c[i3 + 1]
+        p2 = curve.c[i3 + 2]
+
+        if tag == 'CURVE':
+            path.append(
+                f"C {fixed(p0.x * scale['x'])} {fixed(p0.y * scale['y'])}, "
+                f"{fixed(p1.x * scale['x'])} {fixed(p1.y * scale['y'])}, "
+                f"{fixed(p2.x * scale['x'])} {fixed(p2.y * scale['y'])}"
+            )
+        elif tag == 'CORNER':
+            path.append(
+                f"L {fixed(p1.x * scale['x'])} {fixed(p1.y * scale['y'])} "
+                f"{fixed(p2.x * scale['x'])} {fixed(p2.y * scale['y'])}"
+            )
+
+    return ' '.join(path)
+
+def bezier(t, p0, p1, p2, p3):
+    """
+    Calculate a point on a cubic Bezier curve at parameter t.
+
+    :param t: Parameter between 0 and 1.
+    :param p0: First control Point.
+    :param p1: Second control Point.
+    :param p2: Third control Point.
+    :param p3: Fourth control Point.
+    :return: Point on the Bezier curve.
+    """
+    s = 1 - t
+    res = Point()
+
+    res.x = (s ** 3) * p0.x + 3 * (s ** 2) * t * p1.x + 3 * (t ** 2) * s * p2.x + (t ** 3) * p3.x
+    res.y = (s ** 3) * p0.y + 3 * (s ** 2) * t * p1.y + 3 * (t ** 2) * s * p2.y + (t ** 3) * p3.y
+
+    return res
+
+def tangent(p0, p1, p2, p3, q0, q1):
+    """
+    Calculate the tangent parameter for intersection with another curve.
+
+    :param p0: First control Point of the first curve.
+    :param p1: Second control Point of the first curve.
+    :param p2: Third control Point of the first curve.
+    :param p3: Fourth control Point of the first curve.
+    :param q0: First control Point of the second curve.
+    :param q1: Second control Point of the second curve.
+    :return: Tangent parameter (float) or -1.0 if no valid tangent exists.
+    """
+    A = cprod(p0, p1, q0, q1)
+    B = cprod(p1, p2, q0, q1)
+    C = cprod(p2, p3, q0, q1)
+
+    a = A - 2 * B + C
+    b = -2 * A + 2 * B
+    c = A
+
+    d = b * b - 4 * a * c
+
+    if a == 0 or d < 0:
+        return -1.0
+
+    s = math.sqrt(d)
+
+    r1 = (-b + s) / (2 * a)
+    r2 = (-b - s) / (2 * a)
+
+    if 0 <= r1 <= 1:
+        return r1
+    elif 0 <= r2 <= 1:
+        return r2
+    else:
+        return -1.0
+
+
+# PythonPotrace/lib/Posterizer.py
+
+# Posterizer.py
+#
+# This is a Python translation of Posterizer.js, maintaining the same interface and functionality.
+# It uses Pillow (PIL) instead of Jimp to handle image loading and processing.
+
+from .Potrace import Potrace
+from . import utils
+
+class Posterizer:
+    """
+    Combine multiple Potrace samples with different threshold settings into a single SVG file.
+
+    Parameters
+    ----------
+    options : dict, optional
+        Dictionary of Posterizer options.
+
+    Attributes
+    ----------
+    STEPS_AUTO : int
+        Automatic step selection.
+    FILL_SPREAD : str
+        Strategy to spread fill colors.
+    FILL_DOMINANT : str
+        Strategy to use dominant fill colors.
+    FILL_MEDIAN : str
+        Strategy to use median fill colors.
+    FILL_MEAN : str
+        Strategy to use mean fill colors.
+    RANGES_AUTO : str
+        Automatic range distribution.
+    RANGES_EQUAL : str
+        Equally distributed range.
+
+    """
+
+    # Inherit constants from Potrace class
+    for key in Potrace.__dict__:
+        if key.isupper():
+            setattr(__class__, key, getattr(Potrace, key))
+
+    STEPS_AUTO = -1
+    FILL_SPREAD = 'spread'
+    FILL_DOMINANT = 'dominant'
+    FILL_MEDIAN = 'median'
+    FILL_MEAN = 'mean'
+
+    RANGES_AUTO = 'auto'
+    RANGES_EQUAL = 'equal'
+
+    def __init__(self, options=None):
+        self._potrace = Potrace()
+
+        self._calculatedThreshold = None
+
+        self._params = {
+            'threshold': Potrace.THRESHOLD_AUTO,
+            'blackOnWhite': True,
+            'steps': Posterizer.STEPS_AUTO,
+            'background': Potrace.COLOR_TRANSPARENT,
+            'fillStrategy': Posterizer.FILL_DOMINANT,
+            'rangeDistribution': Posterizer.RANGES_AUTO
+        }
+
+        if options:
+            self.setParameters(options)
+
+    def _addExtraColorStop(self, ranges):
+        """
+        Fine-tune color ranges by adding an extra color stop if necessary.
+
+        If the last range exceeds 10% of the color space, add another color stop
+        to enhance shadows and line art.
+
+        Parameters
+        ----------
+        ranges : list
+            List of existing color stops.
+
+        Returns
+        -------
+        list
+            Updated list of color stops.
+        """
+        blackOnWhite = self._params['blackOnWhite']
+        lastColorStop = ranges[-1]
+        lastRangeFrom = 0 if blackOnWhite else lastColorStop['value']
+        lastRangeTo = lastColorStop['value'] if blackOnWhite else 255
+
+        if (lastRangeTo - lastRangeFrom > 25) and (lastColorStop['colorIntensity'] != 1):
+            histogram = self._getImageHistogram()
+            stats = histogram.getStats(lastRangeFrom, lastRangeTo)['levels']
+
+            if stats['mean'] + stats['stdDev'] <= 25:
+                newColorStopValue = stats['mean'] + stats['stdDev']
+            elif stats['mean'] - stats['stdDev'] <= 25:
+                newColorStopValue = stats['mean'] - stats['stdDev']
+            else:
+                newColorStopValue = 25
+
+            if blackOnWhite:
+                newStats = histogram.getStats(0, newColorStopValue)
+            else:
+                newStats = histogram.getStats(newColorStopValue, 255)
+
+            newColor = newStats['levels']['mean']
+
+            ranges.append({
+                'value': abs(0 if blackOnWhite else 255 - newColorStopValue),
+                'colorIntensity': 0 if newColor is None else (
+                    (255 - newColor) / 255 if blackOnWhite else (newColor / 255)
+                )
+            })
+
+        return ranges
+
+    def _calcColorIntensity(self, colorStops):
+        """
+        Calculate color intensity for each color stop.
+
+        Parameters
+        ----------
+        colorStops : list
+            List of color stop values.
+
+        Returns
+        -------
+        list
+            List of dictionaries with 'value' and 'colorIntensity'.
+        """
+        blackOnWhite = self._params['blackOnWhite']
+        colorSelectionStrategy = self._params['fillStrategy']
+        histogram = None
+        if colorSelectionStrategy != Posterizer.FILL_SPREAD:
+            histogram = self._getImageHistogram()
+
+        fullRange = abs(self._paramThreshold() - (0 if blackOnWhite else 255))
+
+        intensity_stops = []
+        for index, stop in enumerate(colorStops):
+            if index + 1 == len(colorStops):
+                nextValue = -1 if blackOnWhite else 256
+            else:
+                nextValue = colorStops[index + 1]['value']
+
+            rangeStart = round(nextValue + 1) if blackOnWhite else round(stop['value'])
+            rangeEnd = round(stop['value']) if blackOnWhite else round(nextValue - 1)
+            factor = index / (len(colorStops) - 1) if len(colorStops) > 1 else 0
+            intervalSize = rangeEnd - rangeStart
+
+            if histogram:
+                stats = histogram.getStats(rangeStart, rangeEnd)
+            else:
+                stats = {'levels': {'mean': 0, 'median': 0, 'stdDev': 0, 'unique': 0}}
+
+            color = -1
+
+            if stats['pixels'] == 0:
+                intensity_stops.append({'value': stop['value'], 'colorIntensity': 0})
+                continue
+
+            if colorSelectionStrategy == Posterizer.FILL_SPREAD:
+                color = (rangeStart + (intervalSize * max(0.5, fullRange / 255) * factor)) \
+                        if blackOnWhite else \
+                        (rangeEnd - (intervalSize * max(0.5, fullRange / 255) * factor))
+            elif colorSelectionStrategy == Posterizer.FILL_DOMINANT:
+                tolerance = utils.clamp(intervalSize, 1, 5)
+                color = histogram.getDominantColor(rangeStart, rangeEnd, tolerance)
+            elif colorSelectionStrategy == Posterizer.FILL_MEAN:
+                color = stats['levels']['mean']
+            elif colorSelectionStrategy == Posterizer.FILL_MEDIAN:
+                color = stats['levels']['median']
+
+            if index != 0:
+                if blackOnWhite:
+                    color = utils.clamp(color, rangeStart, round(rangeEnd - intervalSize * 0.1))
+                else:
+                    color = utils.clamp(color, round(rangeStart + intervalSize * 0.1), rangeEnd)
+
+            intensity = 0 if color == -1 else (
+                (255 - color) / 255 if blackOnWhite else (color / 255)
+            )
+            intensity_stops.append({
+                'value': stop['value'],
+                'colorIntensity': intensity
+            })
+
+        return intensity_stops
+
+    def _getImageHistogram(self):
+        """
+        Retrieve the histogram of the image.
+
+        Returns
+        -------
+        Histogram
+            Histogram instance of the image.
+        """
+        return self._potrace._luminanceData.histogram()
+
+    def _getRanges(self):
+        """
+        Process parameters to return a normalized array of color stops.
+
+        Returns
+        -------
+        list
+            List of color stops with 'value' and 'colorIntensity'.
+        """
+        steps = self._paramSteps()
+
+        if not isinstance(steps, list):
+            if self._params['rangeDistribution'] == Posterizer.RANGES_AUTO:
+                return self._getRangesAuto()
+            else:
+                return self._getRangesEquallyDistributed()
+
+        # Steps is an array of thresholds; preprocess it
+        colorStops = []
+        threshold = self._paramThreshold()
+        blackOnWhite = self._params['blackOnWhite']
+
+        for item in steps:
+            if item not in colorStops and utils.between(item, 0, 255):
+                colorStops.append(item)
+
+        if not colorStops:
+            colorStops.append(threshold)
+
+        colorStops.sort(reverse=blackOnWhite)
+
+        if blackOnWhite and colorStops[0] < threshold:
+            colorStops.insert(0, threshold)
+        elif not blackOnWhite and colorStops[-1] < threshold:
+            colorStops.append(threshold)
+
+        return self._calcColorIntensity(colorStops)
+
+    def _getRangesAuto(self):
+        """
+        Calculate color stops using an automatic thresholding algorithm.
+
+        Returns
+        -------
+        list
+            List of color stops with 'value' and 'colorIntensity'.
+        """
+        histogram = self._getImageHistogram()
+        steps = self._paramSteps(count=True)
+        steps = steps if isinstance(steps, int) else 4  # Default steps
+
+        if self._params['threshold'] == Potrace.THRESHOLD_AUTO:
+            colorStops = histogram.multilevelThresholding(steps)
+        else:
+            threshold = self._paramThreshold()
+            if self._params['blackOnWhite']:
+                colorStops = histogram.multilevelThresholding(steps - 1, 0, threshold)
+                colorStops.append(threshold)
+            else:
+                colorStops = histogram.multilevelThresholding(steps - 1, threshold, 255)
+                colorStops.insert(0, threshold)
+
+        if self._params['blackOnWhite']:
+            colorStops = list(reversed(colorStops))
+
+        return self._calcColorIntensity(colorStops)
+
+    def _getRangesEquallyDistributed(self):
+        """
+        Calculate color stops with equally distributed thresholds.
+
+        Returns
+        -------
+        list
+            List of color stops with 'value' and 'colorIntensity'.
+        """
+        blackOnWhite = self._params['blackOnWhite']
+        colorsToThreshold = self._paramThreshold() if blackOnWhite else 255 - self._paramThreshold()
+        steps = self._paramSteps(count=True)
+
+        stepSize = colorsToThreshold / steps
+        colorStops = []
+        for i in range(steps - 1, -1, -1):
+            factor = i / (steps - 1) if steps > 1 else 0
+            threshold = min(colorsToThreshold, (i + 1) * stepSize)
+            threshold = threshold if blackOnWhite else 255 - threshold
+            colorStops.append(threshold)
+
+        return self._calcColorIntensity(colorStops)
+
+    def _paramSteps(self, count=False):
+        """
+        Retrieve the number of steps based on parameters.
+
+        Parameters
+        ----------
+        count : bool, optional
+            If True, return the number of steps; otherwise, return step value.
+
+        Returns
+        -------
+        int
+            Number of steps or step value.
+        """
+        steps = self._params['steps']
+
+        if isinstance(steps, list):
+            return steps if count else len(steps)
+
+        if steps == Posterizer.STEPS_AUTO and self._params['threshold'] == Potrace.THRESHOLD_AUTO:
+            return 4 if count else Posterizer.STEPS_AUTO
+
+        blackOnWhite = self._params['blackOnWhite']
+        colorsCount = self._paramThreshold() if blackOnWhite else 255 - self._paramThreshold()
+
+        if steps == Posterizer.STEPS_AUTO:
+            return 4 if colorsCount > 200 else 3
+        else:
+            return min(colorsCount, max(2, steps))
+
+    def _paramThreshold(self):
+        """
+        Retrieve the valid threshold value.
+
+        Returns
+        -------
+        int
+            Valid threshold value.
+        """
+        if self._calculatedThreshold is not None:
+            return self._calculatedThreshold
+
+        if self._params['threshold'] != Potrace.THRESHOLD_AUTO:
+            self._calculatedThreshold = self._params['threshold']
+            return self._calculatedThreshold
+
+        twoThresholds = self._getImageHistogram().multilevelThresholding(2)
+        if self._params['blackOnWhite']:
+            self._calculatedThreshold = twoThresholds[1] if len(twoThresholds) > 1 else 128
+        else:
+            self._calculatedThreshold = twoThresholds[0] if len(twoThresholds) > 0 else 128
+
+        self._calculatedThreshold = self._calculatedThreshold or 128
+
+        return self._calculatedThreshold
+
+    def _pathTags(self, noFillColor=False):
+        """
+        Generate SVG path tags by running Potrace with different thresholds.
+
+        Parameters
+        ----------
+        noFillColor : bool, optional
+            If True, no fill color is applied.
+
+        Returns
+        -------
+        list
+            List of SVG path elements as strings.
+        """
+        ranges = self._getRanges()
+        potrace = self._potrace
+        blackOnWhite = self._params['blackOnWhite']
+
+        if len(ranges) >= 10:
+            ranges = self._addExtraColorStop(ranges)
+
+        potrace.setParameters({'blackOnWhite': blackOnWhite})
+
+        actualPrevLayersOpacity = 0
+
+        path_elements = []
+        for colorStop in ranges:
+            thisLayerOpacity = colorStop['colorIntensity']
+
+            if thisLayerOpacity == 0:
+                path_elements.append('')
+                continue
+
+            if not actualPrevLayersOpacity or thisLayerOpacity == 1:
+                calculatedOpacity = thisLayerOpacity
+            else:
+                calculatedOpacity = (actualPrevLayersOpacity - thisLayerOpacity) / (actualPrevLayersOpacity - 1)
+
+            calculatedOpacity = utils.clamp(round(calculatedOpacity, 3), 0, 1)
+            actualPrevLayersOpacity += (1 - actualPrevLayersOpacity) * calculatedOpacity
+
+            potrace.setParameters({'threshold': colorStop['value']})
+
+            element = potrace.getPathTag('' if noFillColor else None)
+            element = utils.setHtmlAttr(element, 'fill-opacity', f"{calculatedOpacity:.3f}")
+
+            canBeIgnored = (calculatedOpacity == 0) or ('d=""' in element)
+
+            # Set fill color based on opacity
+            # c = round(abs((0 if blackOnWhite else 255) - 255 * thisLayerOpacity))
+            # element = utils.setHtmlAttr(element, 'fill', f'rgb({c}, {c}, {c})')
+            # element = utils.setHtmlAttr(element, 'fill-opacity', '')
+
+            path_elements.append('' if canBeIgnored else element)
+
+        return path_elements
+
+    def loadImage(self, target, callback):
+        """
+        Load the image for processing.
+
+        Parameters
+        ----------
+        target : str or Image
+            Image source, such as a file path or Pillow Image instance.
+        callback : function
+            Callback function with signature (error). `error` is None on success or an Exception on failure.
+        """
+        def after_load(err):
+            self._calculatedThreshold = None
+            callback(err)
+
+        self._potrace.loadImage(target, after_load)
+
+    def setParameters(self, params):
+        """
+        Set Posterizer parameters.
+
+        Parameters
+        ----------
+        params : dict
+            Dictionary of Posterizer options.
+        """
+        if not params:
+            return
+
+        self._potrace.setParameters(params)
+
+        if 'steps' in params and not isinstance(params['steps'], list):
+            steps = params['steps']
+            if not (isinstance(steps, int) and utils.between(steps, 1, 255)):
+                raise ValueError("Bad 'steps' value")
+
+        for key in self._params:
+            if key in params:
+                self._params[key] = params[key]
+
+        self._calculatedThreshold = None
+
+    def getSymbol(self, id_):
+        """
+        Generate an SVG <symbol> tag for the image.
+
+        Parameters
+        ----------
+        id_ : str
+            Symbol ID for the SVG.
+
+        Returns
+        -------
+        str
+            String of a <symbol> element.
+        """
+        width = self._potrace._luminanceData.width
+        height = self._potrace._luminanceData.height
+        paths = self._pathTags(noFillColor=True)
+
+        return f'<symbol viewBox="0 0 {width} {height}" id="{id_}">' + ''.join(paths) + '</symbol>'
+
+    def getSVG(self):
+        """
+        Generate the complete SVG image.
+
+        Returns
+        -------
+        str
+            String of the complete SVG document.
+        """
+        width = self._potrace._luminanceData.width
+        height = self._potrace._luminanceData.height
+
+        tags = self._pathTags(noFillColor=False)
+
+        svg_elements = []
+        svg_elements.append('<svg xmlns="http://www.w3.org/2000/svg" '
+                            f'width="{width}" height="{height}" '
+                            f'viewBox="0 0 {width} {height}" version="1.1">')
+
+        if self._params['background'] != Potrace.COLOR_TRANSPARENT:
+            svg_elements.append(f'\t<rect x="0" y="0" width="100%" height="100%" fill="{self._params["background"]}" />')
+
+        svg_elements.extend([f'\t{tag}' for tag in tags if tag])
+        svg_elements.append('</svg>')
+
+        # Join the SVG elements, removing any empty lines caused by ignored paths
+        svg_content = '\n'.join(svg_elements).replace('\n\t\n', '\n')
+        return svg_content
+
+
+# PythonPotrace/lib/types/Quad.py
+
+# Quad.py
+
+
+class Quad:
+    def __init__(self):
+        """
+        Initialize a Quad instance with default values.
+        """
+        self.data = [0] * 9  # Initializes a list with nine zeros
+
+    def at(self, x, y):
+        """
+        Access the element at the specified position.
+
+        Parameters
+        ----------
+        x : int
+            Row index (0-based).
+        y : int
+            Column index (0-based).
+
+        Returns
+        -------
+        int
+            The value at the specified position.
+
+        Raises
+        ------
+        IndexError
+            If x or y is out of bounds.
+        """
+        index = x * 3 + y
+        if 0 <= index < len(self.data):
+            return self.data[index]
+        else:
+            raise IndexError("Quad index out of range")
+
+
+# PythonPotrace/lib/types/Histogram.py
+
+# Histogram.py
+#
+# This is a Python translation of histogram.js, maintaining the same interface and
+# functionality. It uses Pillow (PIL) instead of Jimp to handle image data when necessary.
+# The supporting classes and methods (Bitmap, utils, etc.) are assumed to exist in your
+# environment, just like in the Node.js code.
+
+from PIL import Image
+from ..utils import clamp, luminance
+from .Bitmap import Bitmap
+
+COLOR_DEPTH = 256
+COLOR_RANGE_END = COLOR_DEPTH - 1
+
+def index(x, y):
+    """
+    Calculate the array index for a pair of coordinates.
+
+    Parameters
+    ----------
+    x : int
+        First index.
+    y : int
+        Second index.
+
+    Returns
+    -------
+    int
+        Calculated array index.
+    """
+    return COLOR_DEPTH * x + y
+
+def normalizeMinMax(levelMin, levelMax):
+    """
+    Normalize and clamp minimum and maximum levels.
+
+    Parameters
+    ----------
+    levelMin : int or float
+        Minimum level value.
+    levelMax : int or float
+        Maximum level value.
+
+    Returns
+    -------
+    list of int
+        Normalized [levelMin, levelMax].
+
+    Raises
+    ------
+    ValueError
+        If levelMin is greater than levelMax.
+    """
+    levelMin = (
+        clamp(int(round(levelMin)), 0, COLOR_RANGE_END)
+        if isinstance(levelMin, (int, float))
+        else 0
+    )
+    levelMax = (
+        clamp(int(round(levelMax)), 0, COLOR_RANGE_END)
+        if isinstance(levelMax, (int, float))
+        else COLOR_RANGE_END
+    )
+
+    if levelMin > levelMax:
+        raise ValueError(f'Invalid range "{levelMin}...{levelMax}"')
+
+    return [levelMin, levelMax]
+
+class Histogram:
+    """
+    Histogram for aggregating color data.
+
+    Attributes
+    ----------
+    data : list of int
+        Histogram data.
+    pixels : int
+        Total number of pixels.
+    _sortedIndexes : list of int or None
+        Cached sorted color indices.
+    _cachedStats : dict
+        Cached statistics.
+    _lookupTableH : list of float or None
+        Lookup table for thresholding.
+    """
+
+    MODE_LUMINANCE = 'luminance'
+    MODE_R = 'r'
+    MODE_G = 'g'
+    MODE_B = 'b'
+
+    def __init__(self, imageSource, mode=None):
+        """
+        Initialize the Histogram.
+
+        Parameters
+        ----------
+        imageSource : int or Bitmap or Image.Image
+            Source for histogram data.
+        mode : str, optional
+            Mode for histogram (e.g., 'r', 'g', 'b', 'luminance').
+        """
+        self.data = None
+        self.pixels = 0
+        self._sortedIndexes = None
+        self._cachedStats = {}
+        self._lookupTableH = None
+
+        if isinstance(imageSource, int):
+            # Create an empty histogram array sized for `imageSource` pixels
+            self._createArray(imageSource)
+        elif isinstance(imageSource, Bitmap):
+            # Collect values from the Bitmap
+            self._collectValuesBitmap(imageSource)
+        elif isinstance(imageSource, Image.Image):
+            # Collect values from a Pillow image
+            self._collectValuesPillow(imageSource, mode)
+        else:
+            raise ValueError("Unsupported image source")
+
+    def _createArray(self, imageSize):
+        """
+        Initializes data array for an image of given pixel size. We approximate the
+        JavaScript approach:
+          - If imageSize <= 2^8, use a smaller array type
+          - If imageSize <= 2^16, medium
+          - Otherwise, large
+        In Python, we'll just store data in a list (or we could store in e.g. array.array).
+        """
+        # In Python, we don't strictly need different types for different ranges,
+        # but we replicate the logic anyway.
+        if imageSize <= 2 ** 8:
+            # We'll just use a list of length 256 for counting.
+            self.data = [0] * COLOR_DEPTH
+        elif imageSize <= 2 ** 16:
+            # We'll also just use a list, but let's note the original logic.
+            self.data = [0] * COLOR_DEPTH
+        else:
+            self.data = [0] * COLOR_DEPTH
+
+        self.pixels = imageSize
+        return self.data
+
+    def _collectValuesPillow(self, source, mode):
+        """
+        Aggregates color data from a Pillow Image instance.
+
+        Parameters
+        ----------
+        source : Image.Image
+            Pillow Image instance.
+        mode : str
+            Mode for histogram (e.g., 'r', 'g', 'b', 'luminance').
+        """
+        width, height = source.size
+        pixelCount = width * height
+        data = self._createArray(pixelCount)
+
+        # We assume the source is in RGBA or has been converted accordingly
+        pixels = source.load()
+
+        for y in range(height):
+            for x in range(width):
+                px = pixels[x, y]
+                # px could be (R, G, B) or (R, G, B, A)
+                if len(px) == 4:
+                    r, g, b, a = px
+                else:
+                    r, g, b = px
+                    a = 255
+
+                if mode == Histogram.MODE_R:
+                    val = r
+                elif mode == Histogram.MODE_G:
+                    val = g
+                elif mode == Histogram.MODE_B:
+                    val = b
+                else:
+                    # Luminance
+                    val = luminance(r, g, b)
+
+                data[val] += 1
+
+    def _collectValuesBitmap(self, source):
+        """
+        Aggregates color data from a Bitmap instance.
+
+        Parameters
+        ----------
+        source : Bitmap
+            Bitmap instance.
+        """
+        data = self._createArray(source.size)
+        # Each entry in source.data is presumably an 8-bit color value
+        for color in source.data:
+            data[color] += 1
+
+    def _getSortedIndexes(self, refresh=False):
+        """
+        Returns array of color indexes [0..255] in ascending order (from least used color
+        to most used color).
+
+        Parameters
+        ----------
+        refresh : bool, optional
+            If True, always re-sort.
+
+        Returns
+        -------
+        list of int
+            Sorted color indices.
+        """
+        if not refresh and self._sortedIndexes is not None:
+            return self._sortedIndexes
+
+        # Sort indices [0..255] by the number of pixels that have each color
+        indexes = list(range(COLOR_DEPTH))
+        data = self.data
+
+        # Ascending sort of color usage
+        indexes.sort(key=lambda idx: data[idx])
+        self._sortedIndexes = indexes
+        return indexes
+
+    def _thresholdingBuildLookupTable(self):
+        """
+        Builds lookup table H from intermediate lookup tables P and S. This is used for
+        multi-level thresholding. The logic matches the JavaScript approach.
+
+        Returns
+        -------
+        list of float
+            Lookup table H.
+        """
+        # We'll store floats in Python
+        P = [0.0] * (COLOR_DEPTH * COLOR_DEPTH)
+        S = [0.0] * (COLOR_DEPTH * COLOR_DEPTH)
+        H = [0.0] * (COLOR_DEPTH * COLOR_DEPTH)
+        pixelsTotal = float(self.pixels)
+
+        # diagonal
+        for i in range(1, COLOR_DEPTH):
+            idx = index(i, i)
+            tmp = self.data[i] / pixelsTotal
+            P[idx] = tmp
+            S[idx] = i * tmp
+
+        # first row (row 0 is all zeros, which is effectively done by default)
+        for i in range(1, COLOR_DEPTH - 1):
+            tmp = self.data[i + 1] / pixelsTotal
+            idx = index(1, i)
+            P[idx + 1] = P[idx] + tmp
+            S[idx + 1] = S[idx] + (i + 1) * tmp
+
+        # using row 1 to calculate others
+        for i in range(2, COLOR_DEPTH):
+            for j in range(i + 1, COLOR_DEPTH):
+                P[index(i, j)] = P[index(1, j)] - P[index(1, i - 1)]
+                S[index(i, j)] = S[index(1, j)] - S[index(1, i - 1)]
+
+        # now calculate H[i][j]
+        for i in range(1, COLOR_DEPTH):
+            for j in range(i + 1, COLOR_DEPTH):
+                idx = index(i, j)
+                Pval = P[idx]
+                H[idx] = (S[idx] * S[idx] / Pval) if Pval != 0 else 0
+
+        self._lookupTableH = H
+        return H
+
+    def multilevelThresholding(self, amount, levelMin=None, levelMax=None):
+        """
+        Implements 'Algorithm For Multilevel Thresholding' to find `amount` thresholds.
+        This might be limited to a range of levelMin..levelMax, but it still uses the
+        entire histogram's variance to compute thresholds.
+
+        Parameters
+        ----------
+        amount : int
+            Number of thresholds to compute.
+        levelMin : int or float, optional
+            Histogram segment start.
+        levelMax : int or float, optional
+            Histogram segment end.
+
+        Returns
+        -------
+        list of int
+            List of threshold values.
+        """
+        [levelMin, levelMax] = normalizeMinMax(levelMin, levelMax)
+        amount = min(levelMax - levelMin - 2, int(amount))
+
+        if amount < 1:
+            return []
+
+        if self._lookupTableH is None:
+            self._thresholdingBuildLookupTable()
+
+        H = self._lookupTableH
+        maxSig = 0.0
+        colorStops = None
+
+        if amount > 4:
+            print("[Warning]: Threshold computation for more than 5 levels "
+                  "may take a long time")
+
+        def iterateRecursive(startingPoint=0, prevVariance=0.0, indexes=None, previousDepth=0):
+            nonlocal maxSig, colorStops
+
+            if indexes is None:
+                indexes = [0] * amount
+
+            sp = startingPoint + 1
+            depth = previousDepth + 1
+
+            for i in range(sp, levelMax - amount + previousDepth + 1):
+                variance = prevVariance + H[index(sp, i)]
+                indexes[depth - 1] = i
+
+                if depth + 1 < amount + 1:
+                    # go deeper
+                    iterateRecursive(i, variance, indexes, depth)
+                else:
+                    # final
+                    variance += H[index(i + 1, levelMax)]
+                    if maxSig < variance:
+                        maxSig = variance
+                        colorStops = indexes[:]
+
+        iterateRecursive(0)
+
+        return colorStops if colorStops else []
+
+    def autoThreshold(self, levelMin=None, levelMax=None):
+        """
+        Automatically finds threshold value using 'Algorithm For Multilevel Thresholding'
+        with amount=1.
+
+        Parameters
+        ----------
+        levelMin : int or float, optional
+            Histogram segment start.
+        levelMax : int or float, optional
+            Histogram segment end.
+
+        Returns
+        -------
+        int or None
+            Single threshold value, or None if not found.
+        """
+        val = self.multilevelThresholding(1, levelMin, levelMax)
+        return val[0] if len(val) else None
+
+    def getDominantColor(self, levelMin=None, levelMax=None, tolerance=1):
+        """
+        Returns the dominant color in [levelMin..levelMax]. If not found, returns -1.
+
+        Parameters
+        ----------
+        levelMin : int or float, optional
+            Histogram segment start.
+        levelMax : int or float, optional
+            Histogram segment end.
+        tolerance : int, optional
+            How many adjacent color bins to consider.
+
+        Returns
+        -------
+        int
+            Dominant color index [0..255], or -1 if not found.
+        """
+        [levelMin, levelMax] = normalizeMinMax(levelMin, levelMax)
+
+        colors = self.data
+        dominantIndex = -1
+        dominantValue = -1
+
+        # If there's exactly one color to check
+        if levelMin == levelMax:
+            return levelMin if colors[levelMin] > 0 else -1
+
+        for i in range(levelMin, levelMax + 1):
+            tmp = 0
+            # gather sum of a small range around i
+            for j in range(int(-tolerance // 2), tolerance):
+                idx = i + j
+                if 0 <= idx <= COLOR_RANGE_END:
+                    tmp += colors[idx]
+
+            summIsBigger = tmp > dominantValue
+            summEqualButMainColorIsBigger = (
+                tmp == dominantValue and
+                (dominantIndex < 0 or colors[i] > colors[dominantIndex])
+            )
+
+            if summIsBigger or summEqualButMainColorIsBigger:
+                dominantIndex = i
+                dominantValue = tmp
+
+        return -1 if dominantValue <= 0 else dominantIndex
+
+    def getStats(self, levelMin=None, levelMax=None, refresh=False):
+        """
+        Returns stats for the histogram or its segment [levelMin..levelMax].
+        The returned dict includes:
+            {
+              'levels': {
+                'mean': float,
+                'median': float,
+                'stdDev': float,
+                'unique': int
+              },
+              'pixelsPerLevel': {
+                'mean': float,
+                'median': float,
+                'peak': int
+              },
+              'pixels': int
+            }
+
+        Parameters
+        ----------
+        levelMin : int or float, optional
+            Histogram segment start.
+        levelMax : int or float, optional
+            Histogram segment end.
+        refresh : bool, optional
+            If False and result is cached, returns cached result.
+
+        Returns
+        -------
+        dict
+            Dictionary with the stats.
+        """
+        [levelMin, levelMax] = normalizeMinMax(levelMin, levelMax)
+        cacheKey = f"{levelMin}-{levelMax}"
+
+        if not refresh and cacheKey in self._cachedStats:
+            return self._cachedStats[cacheKey]
+
+        data = self.data
+        sortedIndexes = self._getSortedIndexes()  # ascending usage
+        pixelsTotal = 0
+        allPixelValuesCombined = 0
+        uniqueValues = 0
+        mostPixelsPerLevel = 0
+
+        # Accumulate total pixels and weighted sum
+        for i in range(levelMin, levelMax + 1):
+            cnt = data[i]
+            pixelsTotal += cnt
+            allPixelValuesCombined += cnt * i
+            if cnt > 0:
+                uniqueValues += 1
+            if cnt > mostPixelsPerLevel:
+                mostPixelsPerLevel = cnt
+
+        if pixelsTotal == 0:
+            # no data in this range, create an "empty" stats
+            stats = {
+                'levels': {
+                    'mean': float('nan'),
+                    'median': float('nan'),
+                    'stdDev': float('nan'),
+                    'unique': 0
+                },
+                'pixelsPerLevel': {
+                    'mean': float('nan'),
+                    'median': float('nan'),
+                    'peak': 0
+                },
+                'pixels': 0
+            }
+            self._cachedStats[cacheKey] = stats
+            return stats
+
+        meanValue = allPixelValuesCombined / float(pixelsTotal)
+        pixelsPerLevelMean = pixelsTotal / float(levelMax - levelMin) if (levelMax - levelMin) > 0 else float('nan')
+        pixelsPerLevelMedian = pixelsTotal / float(uniqueValues) if uniqueValues else float('nan')
+        medianPixelIndex = pixelsTotal // 2
+
+        tmpPixelsIterated = 0
+        tmpSumOfDeviations = 0.0
+        medianValue = None
+
+        for idx in sortedIndexes:
+            if idx < levelMin or idx > levelMax:
+                continue
+            count = data[idx]
+            tmpPixelsIterated += count
+            tmpSumOfDeviations += (idx - meanValue) ** 2 * count
+
+            if medianValue is None and tmpPixelsIterated >= medianPixelIndex:
+                medianValue = idx
+
+        stdDevValue = (tmpSumOfDeviations / pixelsTotal) ** 0.5 if pixelsTotal else float('nan')
+
+        stats = {
+            'levels': {
+                'mean': meanValue,
+                'median': medianValue,
+                'stdDev': stdDevValue,
+                'unique': uniqueValues
+            },
+            'pixelsPerLevel': {
+                'mean': pixelsPerLevelMean,
+                'median': pixelsPerLevelMedian,
+                'peak': mostPixelsPerLevel
+            },
+            'pixels': pixelsTotal
+        }
+        self._cachedStats[cacheKey] = stats
+        return stats
+
+
+# PythonPotrace/lib/types/Opti.py
+
+# Opti.py
+
+from .Point import Point
+
+class Opti:
+
+    def __init__(self):
+        """
+        Initialize an Opti instance with default values.
+        """
+        self.pen = 0
+        self.c = [Point(), Point()]
+        self.t = 0
+        self.s = 0
+        self.alpha = 0
+
+
+# PythonPotrace/lib/types/Curve.py
+
+# Curve.py
+
+
+class Curve:
+    """
+    Represents a curve with multiple attributes.
+
+    Parameters
+    ----------
+    n : int
+        Number of elements.
+    """
+
+    def __init__(self, n):
+        self.n = n
+        self.tag = [None] * n
+        self.c = [None] * (n * 3)
+        self.alphaCurve = 0
+        self.vertex = [None] * n
+        self.alpha = [None] * n
+        self.alpha0 = [None] * n
+        self.beta = [None] * n
+
+
+# PythonPotrace/lib/types/Point.py
+
+# Point.py
+
+
+class Point:
+
+    def __init__(self, x=0, y=0):
+        """
+        Initialize a Point instance.
+
+        Parameters
+        ----------
+        x : float, optional
+            X-coordinate, defaults to 0.
+        y : float, optional
+            Y-coordinate, defaults to 0.
+        """
+        self.x = x
+        self.y = y
+
+    def copy(self):
+        """
+        Create a copy of the current Point instance.
+
+        Returns
+        -------
+        Point
+            A new Point instance with the same coordinates.
+        """
+        return Point(self.x, self.y)
+
+
+# PythonPotrace/lib/types/Sum.py
+
+# Sum.py
+
+
+class Sum:
+    def __init__(self, x, y, xy, x2, y2):
+        """
+        Initialize sum values for calculations.
+
+        Parameters
+        ----------
+        x : float
+            Sum of x values.
+        y : float
+            Sum of y values.
+        xy : float
+            Sum of x*y products.
+        x2 : float
+            Sum of x squared.
+        y2 : float
+            Sum of y squared.
+        """
+        self.x = x
+        self.y = y
+        self.xy = xy
+        self.x2 = x2
+        self.y2 = y2
+
+
+# PythonPotrace/lib/types/Bitmap.py
+
+# Bitmap.py
+
+from .Point import Point
+from ..utils import between
+
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .Histogram import Histogram
+
+class Bitmap:
+    """
+    Represents a bitmap with pixel values ranging from 0 to 255.
+
+    Parameters
+    ----------
+    w : int
+        Width of the bitmap.
+    h : int
+        Height of the bitmap.
+
+    Attributes
+    ----------
+    width : int
+        Width of the bitmap.
+    height : int
+        Height of the bitmap.
+    size : int
+        Total number of pixels.
+    array_buffer : bytearray
+        Byte array representing pixel data.
+    data : bytearray
+        Access to pixel data.
+    """
+    def __init__(self, w, h):
+        self._histogram = None
+
+        self.width = w
+        self.height = h
+        self.size = w * h
+        self.array_buffer = bytearray(self.size)  # Equivalent to ArrayBuffer in JS
+        self.data = self.array_buffer  # Accessing data as a bytearray
+
+    def get_value_at(self, x, y=None):
+        """
+        Retrieve the pixel value at a specified position.
+
+        Parameters
+        ----------
+        x : int or Point
+            X-coordinate or a Point instance.
+        y : int, optional
+            Y-coordinate if x is an integer.
+
+        Returns
+        -------
+        int
+            Pixel value at the specified location.
+
+        Raises
+        ------
+        IndexError
+            If the index is out of bounds.
+        """
+        if isinstance(x, int) and y is None:
+            index = x
+        else:
+            index = self.point_to_index(x, y)
+
+        if 0 <= index < self.size:
+            return self.data[index]
+        else:
+            raise IndexError("Index out of bounds.")
+
+    def index_to_point(self, index):
+        """
+        Convert a linear index to a (x, y) coordinate.
+
+        Parameters
+        ----------
+        index : int
+            Linear index.
+
+        Returns
+        -------
+        Point
+            Corresponding Point instance.
+        """
+        if between(index, 0, self.size):
+            y = index // self.width
+            x = index - y * self.width
+            return Point(x, y)
+        else:
+            return Point(-1, -1)
+
+    def point_to_index(self, point_or_x, y=None):
+        """
+        Convert a Point or (x, y) coordinates to a linear index.
+
+        Parameters
+        ----------
+        point_or_x : Point or int
+            Point instance or x-coordinate.
+        y : int, optional
+            Y-coordinate if point_or_x is an integer.
+
+        Returns
+        -------
+        int
+            Linear index corresponding to the (x, y) coordinate.
+        """
+        if isinstance(point_or_x, Point):
+            _x = point_or_x.x
+            _y = point_or_x.y
+        else:
+            _x = point_or_x
+            _y = y
+
+        if not (between(_x, 0, self.width - 1) and between(_y, 0, self.height - 1)):
+            return -1
+
+        return self.width * _y + _x
+
+    def copy(self, iterator=None):
+        """
+        Create a copy of the current bitmap.
+
+        Parameters
+        ----------
+        iterator : callable, optional
+            Function to process each pixel value.
+
+        Returns
+        -------
+        Bitmap
+            A new Bitmap instance.
+        """
+        bm = Bitmap(self.width, self.height)
+        iterator_present = callable(iterator)
+
+        for i in range(self.size):
+            if iterator_present:
+                bm.data[i] = iterator(self.data[i], i)
+            else:
+                bm.data[i] = self.data[i]
+
+        return bm
+
+    def histogram(self):
+        """
+        Generate and retrieve the histogram of the bitmap.
+
+        Returns
+        -------
+        Histogram
+            Histogram of the bitmap.
+        """
+        if self._histogram is not None:
+            return self._histogram
+
+        self._histogram = Histogram(self)
+        return self._histogram
+
+
+# PythonPotrace/lib/types/Path.py
+
+# path.py
+
+
+class Path:
+
+    def __init__(self):
+        """
+        Initialize a Path instance with default attributes.
+        """
+        self.area = 0
+        self.len = 0
+        self.curve = {}
+        self.pt = []
+        self.minX = 100000
+        self.minY = 100000
+        self.maxX = -1
+        self.maxY = -1
+
+

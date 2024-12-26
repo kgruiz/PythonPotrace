@@ -5,15 +5,14 @@ from PIL import Image, ImageDraw
 import io
 import sys
 from pathlib import Path
-from PythonPotrace import index
-from PythonPotrace import Potrace
-from PythonPotrace import Posterizer
-from PythonPotrace import Bitmap
-from PythonPotrace import Point
-from PythonPotrace import Histogram
+from lib import index
+from lib import Potrace
+from lib import Posterizer
+from lib.types.Bitmap import Bitmap
+from lib.types.Point import Point
+from lib.types.Histogram import Histogram
 from skimage import data
 import matplotlib.pyplot as plt
-
 
 
 # Helper function to create a simple test image
