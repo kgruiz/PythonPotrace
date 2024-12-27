@@ -51,12 +51,16 @@ class TestBitmap(unittest.TestCase):
         AssertionError
             If the Bitmap's width, height, or size does not match expected values.
         """
+        print("\nRunning test_Initialization...")
         width, height = 10, 20
         bmp = Bitmap(width, height)
         self.assertEqual(bmp.width, width, "Bitmap width mismatch.")
         self.assertEqual(bmp.height, height, "Bitmap height mismatch.")
-        self.assertEqual(bmp.size, width * height, "Bitmap size mismatch.")
+        self.assertEqual(
+            bmp.width * bmp.height, width * height, "Bitmap size mismatch."
+        )
         self.assertEqual(len(bmp.data), width * height, "Bitmap data length mismatch.")
+        print("test_Initialization passed.")
 
     @timeout(10)
     def test_SetAndGetValue(self):
@@ -68,6 +72,7 @@ class TestBitmap(unittest.TestCase):
         AssertionError
             If retrieved pixel values do not match the set values.
         """
+        print("\nRunning test_SetAndGetValue...")
         width, height = 5, 5
         bmp = Bitmap(width, height)
         # Set pixel values to their index
@@ -87,6 +92,7 @@ class TestBitmap(unittest.TestCase):
                     expected_value,
                     f"Pixel value mismatch at ({x}, {y}). Expected {expected_value}, got {actual_value}.",
                 )
+        print("test_SetAndGetValue passed.")
 
     @timeout(10)
     def test_Copy(self):
@@ -98,10 +104,11 @@ class TestBitmap(unittest.TestCase):
         AssertionError
             If the copied Bitmap's pixel data does not match the original.
         """
+        print("\nRunning test_Copy...")
         width, height = 4, 4
         bmp_original = Bitmap(width, height)
         # Initialize original Bitmap with specific values
-        for i in range(bmp_original.size):
+        for i in range(width * height):
             bmp_original.data[i] = i + 1  # Values from 1 to 16
 
         bmp_copy = bmp_original.copy()
@@ -112,11 +119,12 @@ class TestBitmap(unittest.TestCase):
             bmp_copy.height, bmp_original.height, "Copied Bitmap height mismatch."
         )
         self.assertEqual(
-            bmp_copy.size, bmp_original.size, "Copied Bitmap size mismatch."
+            len(bmp_copy.data), len(bmp_original.data), "Copied Bitmap size mismatch."
         )
         self.assertEqual(
             list(bmp_copy.data), list(bmp_original.data), "Copied Bitmap data mismatch."
         )
+        print("test_Copy passed.")
 
     @timeout(10)
     def test_BoundaryConditions(self):
@@ -128,6 +136,7 @@ class TestBitmap(unittest.TestCase):
         AssertionError
             If accessing out-of-bounds pixels does not return -1.
         """
+        print("\nRunning test_BoundaryConditions...")
         width, height = 3, 3
         bmp = Bitmap(width, height)
         # Accessing out-of-bounds should return -1
@@ -143,32 +152,7 @@ class TestBitmap(unittest.TestCase):
         self.assertEqual(
             bmp.get_value_at(0, height), -1, "Out-of-bounds access did not return -1."
         )
-
-    @timeout(10)
-    def test_BoundaryConditions(self):
-        """
-        Test accessing pixels outside the Bitmap boundaries.
-
-        Raises
-        ------
-        AssertionError
-            If accessing out-of-bounds pixels does not return -1.
-        """
-        width, height = 3, 3
-        bmp = Bitmap(width, height)
-        # Accessing out-of-bounds should return -1
-        self.assertEqual(
-            bmp.get_value_at(-1, 0), -1, "Out-of-bounds access did not return -1."
-        )
-        self.assertEqual(
-            bmp.get_value_at(0, -1), -1, "Out-of-bounds access did not return -1."
-        )
-        self.assertEqual(
-            bmp.get_value_at(width, 0), -1, "Out-of-bounds access did not return -1."
-        )
-        self.assertEqual(
-            bmp.get_value_at(0, height), -1, "Out-of-bounds access did not return -1."
-        )
+        print("test_BoundaryConditions passed.")
 
 
 class TestHistogram(unittest.TestCase):
@@ -189,6 +173,7 @@ class TestHistogram(unittest.TestCase):
         AssertionError
             If the histogram does not accurately reflect the Bitmap's pixel data.
         """
+        print("\nRunning test_HistogramConstruction...")
         bmp = Bitmap(4, 1)
         bmp.data = bytearray([10, 20, 20, 30])  # Pixel values: 10, 20, 20, 30
         histogram = Histogram(bmp)
@@ -209,6 +194,7 @@ class TestHistogram(unittest.TestCase):
                     0,
                     f"Histogram should have zero count for value {value}.",
                 )
+        print("test_HistogramConstruction passed.")
 
     @timeout(10)
     def test_GetStats(self):
@@ -220,6 +206,7 @@ class TestHistogram(unittest.TestCase):
         AssertionError
             If the calculated statistics do not match expected values.
         """
+        print("\nRunning test_GetStats...")
         bmp = Bitmap(5, 1)
         bmp.data = bytearray([0, 0, 255, 128, 128])  # Pixel values: 0, 0, 255, 128, 128
         histogram = Histogram(bmp)
@@ -240,6 +227,7 @@ class TestHistogram(unittest.TestCase):
             places=2,
             msg="Standard deviation mismatch.",
         )
+        print("test_GetStats passed.")
 
     @timeout(20)
     def test_MultilevelThresholding(self):
@@ -251,6 +239,7 @@ class TestHistogram(unittest.TestCase):
         AssertionError
             If the identified thresholds do not match expected values.
         """
+        print("\nRunning test_MultilevelThresholding...")
         bmp = Bitmap(6, 1)
         bmp.data = bytearray(
             [10, 10, 50, 50, 200, 200]
@@ -258,6 +247,7 @@ class TestHistogram(unittest.TestCase):
         histogram = Histogram(bmp)
 
         thresholds = histogram.multilevelThresholding(2)
+        print(f"Identified thresholds: {thresholds}")
         self.assertEqual(len(thresholds), 2, "Number of thresholds mismatch.")
         self.assertTrue(
             10 < thresholds[0] < 50, "First threshold out of expected range."
@@ -265,6 +255,7 @@ class TestHistogram(unittest.TestCase):
         self.assertTrue(
             50 < thresholds[1] < 200, "Second threshold out of expected range."
         )
+        print("test_MultilevelThresholding passed.")
 
     @timeout(10)
     def test_GetDominantColor(self):
@@ -276,6 +267,7 @@ class TestHistogram(unittest.TestCase):
         AssertionError
             If the dominant color does not match the expected value.
         """
+        print("\nRunning test_GetDominantColor...")
         bmp = Bitmap(6, 1)
         bmp.data = bytearray(
             [10, 20, 20, 30, 30, 30]
@@ -284,9 +276,11 @@ class TestHistogram(unittest.TestCase):
 
         dominant = histogram.getDominantColor()
         self.assertEqual(dominant, 30, "Dominant color mismatch.")
+        print("test_GetDominantColor passed.")
 
 
 if __name__ == "__main__":
+
     shutil.rmtree("./Input", ignore_errors=True)
     shutil.rmtree("./Output", ignore_errors=True)
     unittest.main(verbosity=2)
