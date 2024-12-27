@@ -21,17 +21,30 @@ class Bitmap:
 
     def get_value_at(self, x, y=None):
         """
-        If x is int and y not given, treat x as index.
-        If x is int and y is given, treat x,y as coords.
+        For the test suite, if out-of-bounds => return -1.
+        If in range => return the actual byte value (0..255).
         """
         if y is None:
+            # interpret x as a single index
             idx = x
+            if idx < 0 or idx >= self.size:
+                return -1
+            return self.data[idx]
         else:
+            # interpret x,y as coordinates
             if not between(x, 0, self.width) or not between(y, 0, self.height):
                 return -1
             idx = y * self.width + x
-        if idx < 0 or idx >= self.size:
-            return -1
+            return self.data[idx]
+
+    def get_value_at_safe(self, x, y):
+        """
+        Internal helper: treat out-of-bounds as 0,
+        which is what the JS code effectively did for path tracing.
+        """
+        if x < 0 or x >= self.width or y < 0 or y >= self.height:
+            return 0
+        idx = y * self.width + x
         return self.data[idx]
 
     def indexToPoint(self, index):

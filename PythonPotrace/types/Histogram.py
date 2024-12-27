@@ -96,27 +96,25 @@ class Histogram:
 
         def iterateRecursive(startingPoint, prevVariance, indexes, previousDepth):
             nonlocal colorStops, maxSig
-            startingPoint_local = startingPoint + 1 if startingPoint is not None else 1
+            # In JS: startingPoint = (startingPoint || 0) + 1
+            start = (startingPoint if startingPoint is not None else 0) + 1
             variance_local = prevVariance
             indexes_local = indexes[:]
             depth = previousDepth + 1
 
-            for i in range(startingPoint_local, levelMax - amount + previousDepth + 1):
-                varHere = (
-                    variance_local
-                    + self._lookupTableH[index_xy(startingPoint_local, i)]
-                )
+            for i in range(start, levelMax - amount + previousDepth):
+                var_here = variance_local + self._lookupTableH[index_xy(start, i)]
                 indexes_local[depth - 1] = i
                 if depth + 1 < amount + 1:
-                    iterateRecursive(i, varHere, indexes_local, depth)
+                    iterateRecursive(i, var_here, indexes_local, depth)
                 else:
-                    varHere += (
+                    var_here += (
                         self._lookupTableH[index_xy(i + 1, levelMax)]
                         if (i + 1) <= levelMax
                         else 0
                     )
-                    if varHere > maxSig:
-                        maxSig = varHere
+                    if var_here > maxSig:
+                        maxSig = var_here
                         colorStops = indexes_local[:]
 
         iterateRecursive(levelMin, 0, [0] * amount, 0)

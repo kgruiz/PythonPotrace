@@ -1,10 +1,12 @@
-# utils.py
+# PythonPotrace/utils.py
 
-import re
 import math
+import re
+
 from .types.Point import Point
 
 attr_regexps = {}
+
 
 def get_attr_regexp(attr_name):
     """
@@ -18,9 +20,10 @@ def get_attr_regexp(attr_name):
 
     # The JavaScript regex: ' ' + attrName + '="((?:\\\\(?=")"|[^"])+)"'
     # Translated to Python regex
-    pattern = r' ' + re.escape(attr_name) + r'="((?:\\(?=")|[^"])+)"'
+    pattern = r" " + re.escape(attr_name) + r'="((?:\\(?=")|[^"])+)"'
     attr_regexps[attr_name] = re.compile(pattern, re.IGNORECASE)
     return attr_regexps[attr_name]
+
 
 def set_html_attribute(html, attr_name, value):
     """
@@ -38,12 +41,14 @@ def set_html_attribute(html, attr_name, value):
         # Equivalent to JS: html.replace(/<[a-z]+/i, function(beginning) { return beginning + attr; });
         def replacer(match):
             return match.group(0) + attr
-        html = re.sub(r'<[a-z]+', replacer, html, flags=re.IGNORECASE)
+
+        html = re.sub(r"<[a-z]+", replacer, html, flags=re.IGNORECASE)
     else:
         # Replace the existing attribute value
         html = get_attr_regexp(attr_name).sub(attr, html)
 
     return html
+
 
 def fixed(number):
     """
@@ -53,7 +58,8 @@ def fixed(number):
     :return: Formatted string.
     """
     formatted = f"{number:.3f}"
-    return formatted[:-4] if formatted.endswith('.000') else formatted
+    return formatted[:-4] if formatted.endswith(".000") else formatted
+
 
 def mod(a, n):
     """
@@ -70,6 +76,7 @@ def mod(a, n):
     else:
         return n - 1 - ((-1 - a) % n)
 
+
 def xprod(p1, p2):
     """
     Compute the cross product of two points treated as vectors.
@@ -79,6 +86,7 @@ def xprod(p1, p2):
     :return: Cross product value.
     """
     return p1.x * p2.y - p1.y * p2.x
+
 
 def cyclic(a, b, c):
     """
@@ -94,6 +102,7 @@ def cyclic(a, b, c):
     else:
         return a <= b or b < c
 
+
 def sign(i):
     """
     Determine the sign of a number.
@@ -102,6 +111,7 @@ def sign(i):
     :return: 1 if positive, -1 if negative, 0 if zero.
     """
     return 1 if i > 0 else (-1 if i < 0 else 0)
+
 
 def quadform(Q, w):
     """
@@ -119,6 +129,7 @@ def quadform(Q, w):
             sum_val += v[i] * Q.at(i, j) * v[j]
     return sum_val
 
+
 def interval(lambda_, a, b):
     """
     Compute the linear interpolation between points a and b.
@@ -133,6 +144,7 @@ def interval(lambda_, a, b):
     res.y = a.y + lambda_ * (b.y - a.y)
     return res
 
+
 def dorth_infty(p0, p2):
     """
     Compute the direction orthogonal to the vector from p0 to p2.
@@ -146,6 +158,7 @@ def dorth_infty(p0, p2):
     r.x = -sign(p2.y - p0.y)
     return r
 
+
 def ddenom(p0, p2):
     """
     Compute the denominator for certain calculations.
@@ -156,6 +169,7 @@ def ddenom(p0, p2):
     """
     r = dorth_infty(p0, p2)
     return r.y * (p2.x - p0.x) - r.x * (p2.y - p0.y)
+
 
 def dpara(p0, p1, p2):
     """
@@ -171,6 +185,7 @@ def dpara(p0, p1, p2):
     x2 = p2.x - p0.x
     y2 = p2.y - p0.y
     return x1 * y2 - x2 * y1
+
 
 def cprod(p0, p1, p2, p3):
     """
@@ -188,6 +203,7 @@ def cprod(p0, p1, p2, p3):
     y2 = p3.y - p2.y
     return x1 * y2 - x2 * y1
 
+
 def iprod(p0, p1, p2):
     """
     Compute the inner product of two vectors defined by points.
@@ -202,6 +218,7 @@ def iprod(p0, p1, p2):
     x2 = p2.x - p0.x
     y2 = p2.y - p0.y
     return x1 * x2 + y1 * y2
+
 
 def iprod1(p0, p1, p2, p3):
     """
@@ -219,6 +236,7 @@ def iprod1(p0, p1, p2, p3):
     y2 = p3.y - p2.y
     return x1 * x2 + y1 * y2
 
+
 def ddist(p, q):
     """
     Compute the Euclidean distance between two points.
@@ -228,6 +246,7 @@ def ddist(p, q):
     :return: Distance value.
     """
     return math.sqrt((p.x - q.x) ** 2 + (p.y - q.y) ** 2)
+
 
 def luminance(r, g, b):
     """
@@ -240,16 +259,14 @@ def luminance(r, g, b):
     """
     return round(0.2126 * r + 0.7153 * g + 0.0721 * b)
 
+
 def between(val, min_val, max_val):
     """
-    Check if a value is between min_val and max_val, inclusive.
-
-    :param val: The value to check.
-    :param min_val: The minimum bound.
-    :param max_val: The maximum bound.
-    :return: True if val is between min_val and max_val, else False.
+    Check if a value is between min_val and max_val, left-inclusive, right-exclusive.
+    This matches typical 0 <= val < width usage in the JS code.
     """
-    return min_val <= val <= max_val
+    return min_val <= val < max_val
+
 
 def clamp(val, min_val, max_val):
     """
@@ -262,6 +279,7 @@ def clamp(val, min_val, max_val):
     """
     return max(min_val, min(val, max_val))
 
+
 def is_number(val):
     """
     Check if a value is a number (int or float).
@@ -270,6 +288,7 @@ def is_number(val):
     :return: True if val is a number, else False.
     """
     return isinstance(val, (int, float))
+
 
 def render_curve(curve, scale=None):
     """
@@ -280,7 +299,10 @@ def render_curve(curve, scale=None):
     :return: SVG path string.
     """
     if scale is None:
-        scale = {'x': 1, 'y': 1}
+        scale = {"x": 1, "y": 1}
+
+    if not curve or not curve.n:
+        return ""
 
     starting_point = curve.c[(curve.n - 1) * 3 + 2]
 
@@ -289,24 +311,27 @@ def render_curve(curve, scale=None):
     ]
 
     for i, tag in enumerate(curve.tag):
+        if tag is None:
+            continue
         i3 = i * 3
         p0 = curve.c[i3]
         p1 = curve.c[i3 + 1]
         p2 = curve.c[i3 + 2]
 
-        if tag == 'CURVE':
+        if tag == "CURVE":
             path.append(
                 f"C {fixed(p0.x * scale['x'])} {fixed(p0.y * scale['y'])}, "
                 f"{fixed(p1.x * scale['x'])} {fixed(p1.y * scale['y'])}, "
                 f"{fixed(p2.x * scale['x'])} {fixed(p2.y * scale['y'])}"
             )
-        elif tag == 'CORNER':
+        elif tag == "CORNER":
             path.append(
                 f"L {fixed(p1.x * scale['x'])} {fixed(p1.y * scale['y'])} "
                 f"{fixed(p2.x * scale['x'])} {fixed(p2.y * scale['y'])}"
             )
 
-    return ' '.join(path)
+    return " ".join(path)
+
 
 def bezier(t, p0, p1, p2, p3):
     """
@@ -322,10 +347,15 @@ def bezier(t, p0, p1, p2, p3):
     s = 1 - t
     res = Point()
 
-    res.x = (s ** 3) * p0.x + 3 * (s ** 2) * t * p1.x + 3 * (t ** 2) * s * p2.x + (t ** 3) * p3.x
-    res.y = (s ** 3) * p0.y + 3 * (s ** 2) * t * p1.y + 3 * (t ** 2) * s * p2.y + (t ** 3) * p3.y
+    res.x = (
+        (s**3) * p0.x + 3 * (s**2) * t * p1.x + 3 * (t**2) * s * p2.x + (t**3) * p3.x
+    )
+    res.y = (
+        (s**3) * p0.y + 3 * (s**2) * t * p1.y + 3 * (t**2) * s * p2.y + (t**3) * p3.y
+    )
 
     return res
+
 
 def tangent(p0, p1, p2, p3, q0, q1):
     """

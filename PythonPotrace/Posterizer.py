@@ -310,6 +310,7 @@ class Posterizer:
         result = []
         for colorStop in ranges:
             thisLayerOpacity = colorStop["colorIntensity"]
+
             if thisLayerOpacity == 0:
                 result.append("")
                 continue
@@ -331,10 +332,12 @@ class Posterizer:
             # Now do the trace for that threshold
             self._potrace.setParameters({"threshold": colorStop["value"]})
             element = self._potrace.getPathTag("" if noFillColor else None)
-            # Insert fill-opacity
+
+            # Insert fill-opacity, even if zero, otherwise the layer wont be transparent!
             element = setHtmlAttr(element, "fill-opacity", f"{calculatedOpacity:.3f}")
 
             canBeIgnored = (calculatedOpacity == 0) or (' d=""' in element)
+
             result.append("" if canBeIgnored else element)
 
         return result
@@ -372,6 +375,15 @@ class Posterizer:
             ):
                 raise ValueError("'steps' must be in [1..255], or -1 for STEPS_AUTO.")
             # If no exception, we can store it
+        if "threshold" in params and params["threshold"] != Potrace.THRESHOLD_AUTO:
+            if (
+                not isinstance(params["threshold"], (int, float))
+                or params["threshold"] < 0
+                or params["threshold"] > 255
+            ):
+                raise ValueError(
+                    "'threshold' must be in [0..255], or -1 for THRESHOLD_AUTO."
+                )
 
         for key in self._params:
             if key in params:

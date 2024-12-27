@@ -1,4 +1,4 @@
-# Quad.py
+# PythonPotrace/types/Quad.py
 
 
 class Quad:

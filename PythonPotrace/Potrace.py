@@ -1,5 +1,4 @@
 # PythonPotrace/Potrace.py
-
 import math
 
 from PIL import Image
@@ -204,18 +203,27 @@ class Potrace:
             return y * blackMap.width + x
 
         def majority(x, y):
-            # replicates the 'majority' logic from original
+            # Replicate JS logic: +1 if pixel is 1, -1 if pixel is 0
+            # Use get_value_at_safe so out-of-bounds returns 0
             for i in range(2, 5):
                 ct = 0
                 for a in range(-i + 1, i):
-                    ct += blackMap.get_value_at(x + a, y + i - 1)
-                    ct -= 1 - blackMap.get_value_at(x + a, y + i - 1)
-                    ct += blackMap.get_value_at(x + i - 1, y + a - 1)
-                    ct -= 1 - blackMap.get_value_at(x + i - 1, y + a - 1)
-                    ct += blackMap.get_value_at(x + a - 1, y - i)
-                    ct -= 1 - blackMap.get_value_at(x + a - 1, y - i)
-                    ct += blackMap.get_value_at(x - i, y + a)
-                    ct -= 1 - blackMap.get_value_at(x - i, y + a)
+                    # top line
+                    val_top = blackMap.get_value_at_safe(x + a, y + i - 1)
+                    ct += 1 if val_top == 1 else -1
+
+                    # right line
+                    val_right = blackMap.get_value_at_safe(x + i - 1, y + a - 1)
+                    ct += 1 if val_right == 1 else -1
+
+                    # bottom line
+                    val_bottom = blackMap.get_value_at_safe(x + a - 1, y - i)
+                    ct += 1 if val_bottom == 1 else -1
+
+                    # left line
+                    val_left = blackMap.get_value_at_safe(x - i, y + a)
+                    ct += 1 if val_left == 1 else -1
+
                 if ct > 0:
                     return 1
                 elif ct < 0:
@@ -247,10 +255,10 @@ class Potrace:
                     break
 
                 # left & right checks
-                l = blackMap.get_value_at(
+                l = blackMap.get_value_at_safe(
                     x + (dirx + diry - 1) // 2, y + (diry - dirx - 1) // 2
                 )
-                r = blackMap.get_value_at(
+                r = blackMap.get_value_at_safe(
                     x + (dirx - diry - 1) // 2, y + (diry + dirx - 1) // 2
                 )
 
@@ -284,19 +292,17 @@ class Potrace:
             return p
 
         def xorPath(path):
-            len_path = path.len
-            py = path.pt[0].y
-            px = path.pt[0].x
-            for i in range(1, len_path):
+            y1 = path.pt[0].y
+            n = path.len
+            for i in range(1, n):
                 x = path.pt[i].x
                 y = path.pt[i].y
-                if y != py:
-                    minY = min(py, y)
-                    maxX = path.maxX
-                    for col in range(x, maxX):
+                if y != y1:
+                    minY = y1 if y1 < y else y
+                    for col in range(min(x, path.maxX), path.maxX):
                         idx = xy_to_idx(col, minY)
                         blackMap.data[idx] = 1 - blackMap.data[idx]
-                    py = y
+                    y1 = y
 
         currentIndex = 0
         while True:
@@ -547,7 +553,7 @@ class Potrace:
 
         def smooth(path):
             # A simplified version of "smooth" in the JS
-            if not path.curve or not path.curve.n:
+            if not path or not path.curve or not path.curve.n:
                 return
             for i in range(path.curve.n):
                 path.curve.tag[i] = "CURVE"  # or 'CORNER'
@@ -587,10 +593,14 @@ class Potrace:
             if fc == Potrace.COLOR_AUTO:
                 fc = "black" if self._params["blackOnWhite"] else "white"
 
+        if not self._pathlist:
+            return f'<path d="" stroke="none" fill="{fc}" fill-rule="evenodd"/>'
+
         d_parts = []
         for path in self._pathlist:
-            d_str = render_curve(path.curve, scale)
-            d_parts.append(d_str)
+            if path.curve:
+                d_str = render_curve(path.curve, scale)
+                d_parts.append(d_str)
         d = " ".join(d_parts)
 
         return f'<path d="{d}" stroke="none" fill="{fc}" fill-rule="evenodd"/>'
