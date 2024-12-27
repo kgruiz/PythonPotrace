@@ -20,7 +20,7 @@ class TestBitmap(unittest.TestCase):
     copying functionality, and boundary conditions of the Bitmap class.
     """
 
-    def TestInitialization(self):
+    def test_Initialization(self):
         """
         Test that a Bitmap initializes with correct width, height, and size.
 
@@ -36,7 +36,7 @@ class TestBitmap(unittest.TestCase):
         self.assertEqual(bmp.size, width * height, "Bitmap size mismatch.")
         self.assertEqual(len(bmp.data), width * height, "Bitmap data length mismatch.")
 
-    def TestSetAndGetValue(self):
+    def test_SetAndGetValue(self):
         """
         Test setting and retrieving pixel values in the Bitmap.
 
@@ -62,7 +62,7 @@ class TestBitmap(unittest.TestCase):
                 self.assertEqual(actual_value, expected_value,
                                  f"Pixel value mismatch at ({x}, {y}). Expected {expected_value}, got {actual_value}.")
 
-    def TestCopy(self):
+    def test_Copy(self):
         """
         Test that copying a Bitmap preserves all pixel data correctly.
 
@@ -83,7 +83,7 @@ class TestBitmap(unittest.TestCase):
         self.assertEqual(bmp_copy.size, bmp_original.size, "Copied Bitmap size mismatch.")
         self.assertEqual(bmp_copy.data, bmp_original.data, "Copied Bitmap data mismatch.")
 
-    def TestBoundaryConditions(self):
+    def test_BoundaryConditions(self):
         """
         Test accessing pixels outside the Bitmap boundaries.
 
@@ -108,7 +108,7 @@ class TestHistogram(unittest.TestCase):
     calculation of statistics, and thresholding functionality.
     """
 
-    def TestHistogramConstruction(self):
+    def test_HistogramConstruction(self):
         """
         Test that Histogram correctly counts pixel values from a Bitmap.
 
@@ -132,7 +132,7 @@ class TestHistogram(unittest.TestCase):
                 self.assertEqual(histogram.data[value], 0,
                                  f"Histogram should have zero count for value {value}.")
 
-    def TestGetStats(self):
+    def test_GetStats(self):
         """
         Test that Histogram.getStats returns correct statistical values.
 
@@ -155,7 +155,7 @@ class TestHistogram(unittest.TestCase):
                                np.std([0, 0, 255, 128, 128], ddof=0),
                                places=2, msg="Standard deviation mismatch.")
 
-    def TestMultilevelThresholding(self):
+    def test_MultilevelThresholding(self):
         """
         Test that Histogram.multilevelThresholding correctly identifies thresholds.
 
@@ -173,7 +173,7 @@ class TestHistogram(unittest.TestCase):
         self.assertTrue(10 < thresholds[0] < 50, "First threshold out of expected range.")
         self.assertTrue(50 < thresholds[1] < 200, "Second threshold out of expected range.")
 
-    def TestGetDominantColor(self):
+    def test_GetDominantColor(self):
         """
         Test that Histogram.getDominantColor correctly identifies the most frequent color.
 
@@ -203,8 +203,8 @@ class TestPotrace(unittest.TestCase):
         Sets up the testing environment by creating input and output directories
         and saving test images.
         """
-        cls.inputDir = Path("./Inputs_Potrace")
-        cls.outputDir = Path("./Outputs_Potrace")
+        cls.inputDir = Path("./Input/Potrace")
+        cls.outputDir = Path("./Output/Potrace")
         cls.inputDir.mkdir(parents=True, exist_ok=True)
         cls.outputDir.mkdir(parents=True, exist_ok=True)
 
@@ -234,7 +234,7 @@ class TestPotrace(unittest.TestCase):
 
             pilImage.save(cls.inputDir / f"{name}.png")
 
-    def TestLoadImage(self):
+    def test_LoadImage(self):
         """
         Test that Potrace can successfully load various image types without errors.
 
@@ -252,7 +252,7 @@ class TestPotrace(unittest.TestCase):
             except Exception as e:
                 self.fail(f"Potrace.loadImage raised an exception for '{name}': {e}")
 
-    def TestGetSVG(self):
+    def test_GetSVG(self):
         """
         Test that Potrace generates a valid SVG string after loading an image.
 
@@ -276,7 +276,7 @@ class TestPotrace(unittest.TestCase):
             # Check that file was written
             self.assertTrue(outputPath.exists(), f"SVG output file '{outputPath.name}' was not created.")
 
-    def TestPotraceParameters(self):
+    def test_PotraceParameters(self):
         """
         Test that Potrace correctly handles various parameters like turnPolicy and threshold.
 
@@ -320,8 +320,8 @@ class TestPosterizer(unittest.TestCase):
         Sets up the testing environment by creating input and output directories
         and saving test images.
         """
-        cls.inputDir = Path("./Inputs_Posterizer")
-        cls.outputDir = Path("./Outputs_Posterizer")
+        cls.inputDir = Path("./Input/Posterizer")
+        cls.outputDir = Path("./Output/Posterizer")
         cls.inputDir.mkdir(parents=True, exist_ok=True)
         cls.outputDir.mkdir(parents=True, exist_ok=True)
 
@@ -351,7 +351,7 @@ class TestPosterizer(unittest.TestCase):
 
             pilImage.save(cls.inputDir / f"{name}.png")
 
-    def TestLoadImage(self):
+    def test_LoadImage(self):
         """
         Test that Posterizer can successfully load various image types without errors.
 
@@ -370,7 +370,7 @@ class TestPosterizer(unittest.TestCase):
             except Exception as e:
                 self.fail(f"Posterizer.loadImage raised an exception for '{name}': {e}")
 
-    def TestGetSVG(self):
+    def test_GetSVG(self):
         """
         Test that Posterizer generates a valid multi-layer SVG string after loading an image.
 
@@ -395,7 +395,7 @@ class TestPosterizer(unittest.TestCase):
             # Check that file was written
             self.assertTrue(outputPath.exists(), f"SVG output file '{outputPath.name}' was not created.")
 
-    def TestPosterizerParameters(self):
+    def test_PosterizerParameters(self):
         """
         Test that Posterizer correctly handles various parameters like steps, fillStrategy,
         and rangeDistribution.
@@ -426,7 +426,7 @@ class TestPosterizer(unittest.TestCase):
                 except Exception as e:
                     self.fail(f"Posterizer raised an exception with parameters {params} on '{name}': {e}")
 
-    def TestInvalidParameters(self):
+    def test_InvalidParameters(self):
         """
         Test that Posterizer raises appropriate errors when given invalid parameters.
 
@@ -465,8 +465,8 @@ class TestIntegration(unittest.TestCase):
         Sets up the testing environment by creating input and output directories
         and saving test images.
         """
-        cls.inputDir = Path("./Integration_Inputs")
-        cls.outputDir = Path("./Integration_Outputs")
+        cls.inputDir = Path("./Input/Integration")
+        cls.outputDir = Path("./Output/Integration")
         cls.inputDir.mkdir(parents=True, exist_ok=True)
         cls.outputDir.mkdir(parents=True, exist_ok=True)
 
@@ -488,7 +488,7 @@ class TestIntegration(unittest.TestCase):
 
             pilImage.save(cls.inputDir / f"{name}.png")
 
-    def TestPotraceThenPosterizer(self):
+    def test_PotraceThenPosterizer(self):
         """
         Test processing images first with Potrace and then with Posterizer,
         ensuring that each step completes successfully and outputs are correct.
@@ -532,7 +532,7 @@ class TestIntegration(unittest.TestCase):
             except Exception as e:
                 self.fail(f"Integration test failed for '{name}': {e}")
 
-    def TestPosterizerThenPotrace(self):
+    def test_PosterizerThenPotrace(self):
         """
         Test processing images first with Posterizer and then with Potrace,
         ensuring that each step completes successfully and outputs are correct.
@@ -590,8 +590,8 @@ class TestAdvancedOperations(unittest.TestCase):
         Sets up the testing environment by creating input and output directories
         and saving test images.
         """
-        cls.inputDir = Path("./Advanced_Inputs")
-        cls.outputDir = Path("./Advanced_Outputs")
+        cls.inputDir = Path("./Input/Advanced")
+        cls.outputDir = Path("./Output/Advanced")
         cls.inputDir.mkdir(parents=True, exist_ok=True)
         cls.outputDir.mkdir(parents=True, exist_ok=True)
 
@@ -613,7 +613,7 @@ class TestAdvancedOperations(unittest.TestCase):
 
             pilImage.save(cls.inputDir / f"{name}.png")
 
-    def TestBatchProcessingWithDifferentParameters(self):
+    def test_BatchProcessingWithDifferentParameters(self):
         """
         Test batch processing of multiple images with varying Posterizer parameters.
 
@@ -652,7 +652,7 @@ class TestAdvancedOperations(unittest.TestCase):
                 except Exception as e:
                     self.fail(f"Batch processing failed for '{name}' with parameters {params}: {e}")
 
-    def TestPosterizerWithEdgeCaseImages(self):
+    def test_PosterizerWithEdgeCaseImages(self):
         """
         Test Posterizer with edge case images such as fully black, fully white,
         and images with minimal color variation.
@@ -695,7 +695,7 @@ class TestAdvancedOperations(unittest.TestCase):
             except Exception as e:
                 self.fail(f"Posterizer failed on edge case image '{name}': {e}")
 
-    def TestPosterizerWithTransparentBackground(self):
+    def test_PosterizerWithTransparentBackground(self):
         """
         Test Posterizer's handling of images with transparency.
 
@@ -746,8 +746,8 @@ class TestPerformance(unittest.TestCase):
         Sets up the testing environment by creating input and output directories
         and saving a large test image.
         """
-        cls.inputDir = Path("./Performance_Inputs")
-        cls.outputDir = Path("./Performance_Outputs")
+        cls.inputDir = Path("./Input/Performance")
+        cls.outputDir = Path("./Output/Performance")
         cls.inputDir.mkdir(parents=True, exist_ok=True)
         cls.outputDir.mkdir(parents=True, exist_ok=True)
 
@@ -757,7 +757,7 @@ class TestPerformance(unittest.TestCase):
         cls.largeImageName = "LargeImage.png"
         pilImage.save(cls.inputDir / cls.largeImageName)
 
-    def TestPotracePerformance(self):
+    def test_PotracePerformance(self):
         """
         Test that Potrace can process a large image within a reasonable time.
 
@@ -780,7 +780,7 @@ class TestPerformance(unittest.TestCase):
                         f"Potrace output '{outputPath.name}' was not created.")
         self.assertLess(processingTime, 30, "Potrace processing took too long (over 30 seconds).")
 
-    def TestPosterizerPerformance(self):
+    def test_PosterizerPerformance(self):
         """
         Test that Posterizer can process a large image within a reasonable time.
 
