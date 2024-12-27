@@ -1,16 +1,19 @@
 # test.py
 
+import os
+import shutil
 import unittest
 from pathlib import Path
-import os
+
+import numpy as np
 from PIL import Image
 from skimage import data
-import numpy as np
 
 # Import the PythonPotrace package and its modules
-from PythonPotrace import Potrace, Posterizer
+from PythonPotrace import Posterizer, Potrace
 from PythonPotrace.types.Bitmap import Bitmap
 from PythonPotrace.types.Histogram import Histogram
+
 
 class TestBitmap(unittest.TestCase):
     """
@@ -59,8 +62,11 @@ class TestBitmap(unittest.TestCase):
                 idx = y * width + x
                 expected_value = idx * 10
                 actual_value = bmp.getValueAt(x, y)
-                self.assertEqual(actual_value, expected_value,
-                                 f"Pixel value mismatch at ({x}, {y}). Expected {expected_value}, got {actual_value}.")
+                self.assertEqual(
+                    actual_value,
+                    expected_value,
+                    f"Pixel value mismatch at ({x}, {y}). Expected {expected_value}, got {actual_value}.",
+                )
 
     def test_Copy(self):
         """
@@ -78,10 +84,18 @@ class TestBitmap(unittest.TestCase):
             bmp_original.data[i] = i + 1  # Values from 1 to 16
 
         bmp_copy = bmp_original.copy()
-        self.assertEqual(bmp_copy.width, bmp_original.width, "Copied Bitmap width mismatch.")
-        self.assertEqual(bmp_copy.height, bmp_original.height, "Copied Bitmap height mismatch.")
-        self.assertEqual(bmp_copy.size, bmp_original.size, "Copied Bitmap size mismatch.")
-        self.assertEqual(bmp_copy.data, bmp_original.data, "Copied Bitmap data mismatch.")
+        self.assertEqual(
+            bmp_copy.width, bmp_original.width, "Copied Bitmap width mismatch."
+        )
+        self.assertEqual(
+            bmp_copy.height, bmp_original.height, "Copied Bitmap height mismatch."
+        )
+        self.assertEqual(
+            bmp_copy.size, bmp_original.size, "Copied Bitmap size mismatch."
+        )
+        self.assertEqual(
+            bmp_copy.data, bmp_original.data, "Copied Bitmap data mismatch."
+        )
 
     def test_BoundaryConditions(self):
         """
@@ -95,10 +109,19 @@ class TestBitmap(unittest.TestCase):
         width, height = 3, 3
         bmp = Bitmap(width, height)
         # Accessing out-of-bounds should return -1
-        self.assertEqual(bmp.getValueAt(-1, 0), -1, "Out-of-bounds access did not return -1.")
-        self.assertEqual(bmp.getValueAt(0, -1), -1, "Out-of-bounds access did not return -1.")
-        self.assertEqual(bmp.getValueAt(width, 0), -1, "Out-of-bounds access did not return -1.")
-        self.assertEqual(bmp.getValueAt(0, height), -1, "Out-of-bounds access did not return -1.")
+        self.assertEqual(
+            bmp.getValueAt(-1, 0), -1, "Out-of-bounds access did not return -1."
+        )
+        self.assertEqual(
+            bmp.getValueAt(0, -1), -1, "Out-of-bounds access did not return -1."
+        )
+        self.assertEqual(
+            bmp.getValueAt(width, 0), -1, "Out-of-bounds access did not return -1."
+        )
+        self.assertEqual(
+            bmp.getValueAt(0, height), -1, "Out-of-bounds access did not return -1."
+        )
+
 
 class TestHistogram(unittest.TestCase):
     """
@@ -123,14 +146,20 @@ class TestHistogram(unittest.TestCase):
 
         expected_counts = {10: 1, 20: 2, 30: 1}
         for value in [10, 20, 30]:
-            self.assertEqual(histogram.data[value], expected_counts[value],
-                             f"Histogram count mismatch for value {value}.")
+            self.assertEqual(
+                histogram.data[value],
+                expected_counts[value],
+                f"Histogram count mismatch for value {value}.",
+            )
 
         # Ensure other values are zero
         for value in range(0, 256):
             if value not in expected_counts:
-                self.assertEqual(histogram.data[value], 0,
-                                 f"Histogram should have zero count for value {value}.")
+                self.assertEqual(
+                    histogram.data[value],
+                    0,
+                    f"Histogram should have zero count for value {value}.",
+                )
 
     def test_GetStats(self):
         """
@@ -146,14 +175,21 @@ class TestHistogram(unittest.TestCase):
         histogram = Histogram(bmp)
 
         stats = histogram.getStats()
-        self.assertEqual(stats['pixels'], 5, "Total pixel count mismatch.")
-        self.assertEqual(stats['levels']['unique'], 3, "Unique levels count mismatch.")
-        self.assertAlmostEqual(stats['levels']['mean'], (0 + 0 + 255 + 128 + 128) / 5, places=2,
-                               msg="Mean value mismatch.")
-        self.assertEqual(stats['levels']['median'], 128, "Median value mismatch.")
-        self.assertAlmostEqual(stats['levels']['stdDev'],
-                               np.std([0, 0, 255, 128, 128], ddof=0),
-                               places=2, msg="Standard deviation mismatch.")
+        self.assertEqual(stats["pixels"], 5, "Total pixel count mismatch.")
+        self.assertEqual(stats["levels"]["unique"], 3, "Unique levels count mismatch.")
+        self.assertAlmostEqual(
+            stats["levels"]["mean"],
+            (0 + 0 + 255 + 128 + 128) / 5,
+            places=2,
+            msg="Mean value mismatch.",
+        )
+        self.assertEqual(stats["levels"]["median"], 128, "Median value mismatch.")
+        self.assertAlmostEqual(
+            stats["levels"]["stdDev"],
+            np.std([0, 0, 255, 128, 128], ddof=0),
+            places=2,
+            msg="Standard deviation mismatch.",
+        )
 
     def test_MultilevelThresholding(self):
         """
@@ -165,13 +201,19 @@ class TestHistogram(unittest.TestCase):
             If the identified thresholds do not match expected values.
         """
         bmp = Bitmap(6, 1)
-        bmp.data = bytearray([10, 10, 50, 50, 200, 200])  # Pixel values: 10,10,50,50,200,200
+        bmp.data = bytearray(
+            [10, 10, 50, 50, 200, 200]
+        )  # Pixel values: 10,10,50,50,200,200
         histogram = Histogram(bmp)
 
         thresholds = histogram.multilevelThresholding(2)
         self.assertEqual(len(thresholds), 2, "Number of thresholds mismatch.")
-        self.assertTrue(10 < thresholds[0] < 50, "First threshold out of expected range.")
-        self.assertTrue(50 < thresholds[1] < 200, "Second threshold out of expected range.")
+        self.assertTrue(
+            10 < thresholds[0] < 50, "First threshold out of expected range."
+        )
+        self.assertTrue(
+            50 < thresholds[1] < 200, "Second threshold out of expected range."
+        )
 
     def test_GetDominantColor(self):
         """
@@ -183,11 +225,14 @@ class TestHistogram(unittest.TestCase):
             If the dominant color does not match the expected value.
         """
         bmp = Bitmap(6, 1)
-        bmp.data = bytearray([10, 20, 20, 30, 30, 30])  # Pixel values: 10,20,20,30,30,30
+        bmp.data = bytearray(
+            [10, 20, 20, 30, 30, 30]
+        )  # Pixel values: 10,20,20,30,30,30
         histogram = Histogram(bmp)
 
         dominant = histogram.getDominantColor()
         self.assertEqual(dominant, 30, "Dominant color mismatch.")
+
 
 class TestPotrace(unittest.TestCase):
     """
@@ -248,7 +293,9 @@ class TestPotrace(unittest.TestCase):
             potrace = Potrace()
             try:
                 potrace.loadImage(str(inputPath))
-                self.assertTrue(potrace._imageLoaded, f"Potrace failed to load image '{name}'.")
+                self.assertTrue(
+                    potrace._imageLoaded, f"Potrace failed to load image '{name}'."
+                )
             except Exception as e:
                 self.fail(f"Potrace.loadImage raised an exception for '{name}': {e}")
 
@@ -274,7 +321,10 @@ class TestPotrace(unittest.TestCase):
             with open(outputPath, "w", encoding="utf-8") as f:
                 f.write(svgContent)
             # Check that file was written
-            self.assertTrue(outputPath.exists(), f"SVG output file '{outputPath.name}' was not created.")
+            self.assertTrue(
+                outputPath.exists(),
+                f"SVG output file '{outputPath.name}' was not created.",
+            )
 
     def test_PotraceParameters(self):
         """
@@ -286,12 +336,18 @@ class TestPotrace(unittest.TestCase):
             If Potrace does not apply parameters as expected.
         """
         testParams = [
-            {'turnPolicy': Potrace.TURNPOLICY_BLACK, 'threshold': 128},
-            {'turnPolicy': Potrace.TURNPOLICY_WHITE, 'threshold': 100},
-            {'turnPolicy': Potrace.TURNPOLICY_LEFT, 'threshold': 150},
-            {'turnPolicy': Potrace.TURNPOLICY_RIGHT, 'threshold': 200},
-            {'turnPolicy': Potrace.TURNPOLICY_MINORITY, 'threshold': Potrace.THRESHOLD_AUTO},
-            {'turnPolicy': Potrace.TURNPOLICY_MAJORITY, 'threshold': Potrace.THRESHOLD_AUTO},
+            {"turnPolicy": Potrace.TURNPOLICY_BLACK, "threshold": 128},
+            {"turnPolicy": Potrace.TURNPOLICY_WHITE, "threshold": 100},
+            {"turnPolicy": Potrace.TURNPOLICY_LEFT, "threshold": 150},
+            {"turnPolicy": Potrace.TURNPOLICY_RIGHT, "threshold": 200},
+            {
+                "turnPolicy": Potrace.TURNPOLICY_MINORITY,
+                "threshold": Potrace.THRESHOLD_AUTO,
+            },
+            {
+                "turnPolicy": Potrace.TURNPOLICY_MAJORITY,
+                "threshold": Potrace.THRESHOLD_AUTO,
+            },
         ]
 
         for params in testParams:
@@ -302,9 +358,15 @@ class TestPotrace(unittest.TestCase):
                     potrace.loadImage(str(inputPath))
                     potrace.getSVG()
                     # Further checks can be added to verify SVG content based on parameters
-                    self.assertTrue(potrace._imageLoaded, f"Potrace failed with parameters {params} on '{name}'.")
+                    self.assertTrue(
+                        potrace._imageLoaded,
+                        f"Potrace failed with parameters {params} on '{name}'.",
+                    )
                 except Exception as e:
-                    self.fail(f"Potrace raised an exception with parameters {params} on '{name}': {e}")
+                    self.fail(
+                        f"Potrace raised an exception with parameters {params} on '{name}': {e}"
+                    )
+
 
 class TestPosterizer(unittest.TestCase):
     """
@@ -365,8 +427,10 @@ class TestPosterizer(unittest.TestCase):
             posterizer = Posterizer()
             try:
                 posterizer.loadImage(str(inputPath), callback=lambda err: None)
-                self.assertTrue(posterizer._potrace._imageLoaded,
-                                f"Posterizer failed to load image '{name}'.")
+                self.assertTrue(
+                    posterizer._potrace._imageLoaded,
+                    f"Posterizer failed to load image '{name}'.",
+                )
             except Exception as e:
                 self.fail(f"Posterizer.loadImage raised an exception for '{name}': {e}")
 
@@ -382,7 +446,9 @@ class TestPosterizer(unittest.TestCase):
         for name in self.testImages.keys():
             inputPath = self.inputDir / f"{name}.png"
             outputPath = self.outputDir / f"{name}_posterizer.svg"
-            posterizer = Posterizer({"steps": 3, "fillStrategy": Posterizer.FILL_DOMINANT})
+            posterizer = Posterizer(
+                {"steps": 3, "fillStrategy": Posterizer.FILL_DOMINANT}
+            )
             posterizer.loadImage(str(inputPath), callback=lambda err: None)
             svgContent = posterizer.getSVG()
             # Basic checks on SVG content
@@ -393,7 +459,10 @@ class TestPosterizer(unittest.TestCase):
             with open(outputPath, "w", encoding="utf-8") as f:
                 f.write(svgContent)
             # Check that file was written
-            self.assertTrue(outputPath.exists(), f"SVG output file '{outputPath.name}' was not created.")
+            self.assertTrue(
+                outputPath.exists(),
+                f"SVG output file '{outputPath.name}' was not created.",
+            )
 
     def test_PosterizerParameters(self):
         """
@@ -406,11 +475,31 @@ class TestPosterizer(unittest.TestCase):
             If Posterizer does not apply parameters as expected or raises an exception.
         """
         testParams = [
-            {'steps': 2, 'fillStrategy': Posterizer.FILL_SPREAD, 'rangeDistribution': Posterizer.RANGES_AUTO},
-            {'steps': 4, 'fillStrategy': Posterizer.FILL_DOMINANT, 'rangeDistribution': Posterizer.RANGES_EQUAL},
-            {'steps': 5, 'fillStrategy': Posterizer.FILL_MEAN, 'rangeDistribution': Posterizer.RANGES_AUTO},
-            {'steps': 3, 'fillStrategy': Posterizer.FILL_MEDIAN, 'rangeDistribution': Posterizer.RANGES_EQUAL},
-            {'steps': Posterizer.STEPS_AUTO, 'fillStrategy': Posterizer.FILL_DOMINANT, 'rangeDistribution': Posterizer.RANGES_AUTO},
+            {
+                "steps": 2,
+                "fillStrategy": Posterizer.FILL_SPREAD,
+                "rangeDistribution": Posterizer.RANGES_AUTO,
+            },
+            {
+                "steps": 4,
+                "fillStrategy": Posterizer.FILL_DOMINANT,
+                "rangeDistribution": Posterizer.RANGES_EQUAL,
+            },
+            {
+                "steps": 5,
+                "fillStrategy": Posterizer.FILL_MEAN,
+                "rangeDistribution": Posterizer.RANGES_AUTO,
+            },
+            {
+                "steps": 3,
+                "fillStrategy": Posterizer.FILL_MEDIAN,
+                "rangeDistribution": Posterizer.RANGES_EQUAL,
+            },
+            {
+                "steps": Posterizer.STEPS_AUTO,
+                "fillStrategy": Posterizer.FILL_DOMINANT,
+                "rangeDistribution": Posterizer.RANGES_AUTO,
+            },
         ]
 
         for params in testParams:
@@ -421,10 +510,14 @@ class TestPosterizer(unittest.TestCase):
                     posterizer.loadImage(str(inputPath), callback=lambda err: None)
                     svgContent = posterizer.getSVG()
                     self.assertIn("<svg", svgContent, "SVG content missing <svg> tag.")
-                    self.assertIn("</svg>", svgContent, "SVG content missing </svg> tag.")
+                    self.assertIn(
+                        "</svg>", svgContent, "SVG content missing </svg> tag."
+                    )
                     # Additional checks can be implemented based on parameters
                 except Exception as e:
-                    self.fail(f"Posterizer raised an exception with parameters {params} on '{name}': {e}")
+                    self.fail(
+                        f"Posterizer raised an exception with parameters {params} on '{name}': {e}"
+                    )
 
     def test_InvalidParameters(self):
         """
@@ -436,20 +529,24 @@ class TestPosterizer(unittest.TestCase):
             If Posterizer does not raise errors as expected.
         """
         invalidParamsList = [
-            {'steps': -1},
-            {'steps': 0},
-            {'steps': 256},
-            {'fillStrategy': 'invalid_strategy'},
-            {'rangeDistribution': 'invalid_distribution'},
-            {'threshold': 300},
-            {'threshold': -10},
+            {"steps": -1},
+            {"steps": 0},
+            {"steps": 256},
+            {"fillStrategy": "invalid_strategy"},
+            {"rangeDistribution": "invalid_distribution"},
+            {"threshold": 300},
+            {"threshold": -10},
         ]
 
         for params in invalidParamsList:
             for name in self.testImages.keys():
                 inputPath = self.inputDir / f"{name}.png"
-                with self.assertRaises(Exception, msg=f"Posterizer did not raise error for params {params} on '{name}'."):
+                with self.assertRaises(
+                    Exception,
+                    msg=f"Posterizer did not raise error for params {params} on '{name}'.",
+                ):
                     posterizer = Posterizer(options=params)
+
 
 class TestIntegration(unittest.TestCase):
     """
@@ -510,24 +607,34 @@ class TestIntegration(unittest.TestCase):
                 potraceSVG = potrace.getSVG()
                 with open(potraceOutputPath, "w", encoding="utf-8") as f:
                     f.write(potraceSVG)
-                self.assertTrue(potraceOutputPath.exists(),
-                                f"Potrace SVG output '{potraceOutputPath.name}' was not created.")
+                self.assertTrue(
+                    potraceOutputPath.exists(),
+                    f"Potrace SVG output '{potraceOutputPath.name}' was not created.",
+                )
 
                 # Step 2: Posterizer processing on Potrace SVG (assuming Posterizer can take SVG as input)
                 # If Posterizer expects image input, adjust accordingly. Here, assuming image input.
-                posterizer = Posterizer({"steps": 3, "fillStrategy": Posterizer.FILL_MEAN})
+                posterizer = Posterizer(
+                    {"steps": 3, "fillStrategy": Posterizer.FILL_MEAN}
+                )
                 posterizer.loadImage(str(inputPath), callback=lambda err: None)
                 posterizerSVG = posterizer.getSVG()
                 with open(posterizerOutputPath, "w", encoding="utf-8") as f:
                     f.write(posterizerSVG)
-                self.assertTrue(posterizerOutputPath.exists(),
-                                f"Posterizer SVG output '{posterizerOutputPath.name}' was not created.")
+                self.assertTrue(
+                    posterizerOutputPath.exists(),
+                    f"Posterizer SVG output '{posterizerOutputPath.name}' was not created.",
+                )
 
                 # Additional checks can be performed on the SVG content if needed
                 self.assertIn("<svg", potraceSVG, "Potrace SVG missing <svg> tag.")
                 self.assertIn("</svg>", potraceSVG, "Potrace SVG missing </svg> tag.")
-                self.assertIn("<svg", posterizerSVG, "Posterizer SVG missing <svg> tag.")
-                self.assertIn("</svg>", posterizerSVG, "Posterizer SVG missing </svg> tag.")
+                self.assertIn(
+                    "<svg", posterizerSVG, "Posterizer SVG missing <svg> tag."
+                )
+                self.assertIn(
+                    "</svg>", posterizerSVG, "Posterizer SVG missing </svg> tag."
+                )
 
             except Exception as e:
                 self.fail(f"Integration test failed for '{name}': {e}")
@@ -549,13 +656,17 @@ class TestIntegration(unittest.TestCase):
 
             try:
                 # Step 1: Posterizer processing
-                posterizer = Posterizer({"steps": 4, "fillStrategy": Posterizer.FILL_DOMINANT})
+                posterizer = Posterizer(
+                    {"steps": 4, "fillStrategy": Posterizer.FILL_DOMINANT}
+                )
                 posterizer.loadImage(str(inputPath), callback=lambda err: None)
                 posterizerSVG = posterizer.getSVG()
                 with open(posterizerOutputPath, "w", encoding="utf-8") as f:
                     f.write(posterizerSVG)
-                self.assertTrue(posterizerOutputPath.exists(),
-                                f"Posterizer SVG output '{posterizerOutputPath.name}' was not created.")
+                self.assertTrue(
+                    posterizerOutputPath.exists(),
+                    f"Posterizer SVG output '{posterizerOutputPath.name}' was not created.",
+                )
 
                 # Step 2: Potrace processing on Posterizer SVG (assuming Potrace can take SVG as input)
                 # If Potrace expects image input, adjust accordingly. Here, assuming image input.
@@ -564,17 +675,24 @@ class TestIntegration(unittest.TestCase):
                 potraceSVG = potrace.getSVG()
                 with open(potraceOutputPath, "w", encoding="utf-8") as f:
                     f.write(potraceSVG)
-                self.assertTrue(potraceOutputPath.exists(),
-                                f"Potrace SVG output '{potraceOutputPath.name}' was not created.")
+                self.assertTrue(
+                    potraceOutputPath.exists(),
+                    f"Potrace SVG output '{potraceOutputPath.name}' was not created.",
+                )
 
                 # Additional checks can be performed on the SVG content if needed
-                self.assertIn("<svg", posterizerSVG, "Posterizer SVG missing <svg> tag.")
-                self.assertIn("</svg>", posterizerSVG, "Posterizer SVG missing </svg> tag.")
+                self.assertIn(
+                    "<svg", posterizerSVG, "Posterizer SVG missing <svg> tag."
+                )
+                self.assertIn(
+                    "</svg>", posterizerSVG, "Posterizer SVG missing </svg> tag."
+                )
                 self.assertIn("<svg", potraceSVG, "Potrace SVG missing <svg> tag.")
                 self.assertIn("</svg>", potraceSVG, "Potrace SVG missing </svg> tag.")
 
             except Exception as e:
                 self.fail(f"Integration test failed for '{name}': {e}")
+
 
 class TestAdvancedOperations(unittest.TestCase):
     """
@@ -626,31 +744,57 @@ class TestAdvancedOperations(unittest.TestCase):
             If any output file was not created or parameters caused unexpected behavior.
         """
         parameterSets = [
-            {"steps": 2, "fillStrategy": Posterizer.FILL_SPREAD, "rangeDistribution": Posterizer.RANGES_AUTO},
-            {"steps": 3, "fillStrategy": Posterizer.FILL_DOMINANT, "rangeDistribution": Posterizer.RANGES_EQUAL},
-            {"steps": 5, "fillStrategy": Posterizer.FILL_MEAN, "rangeDistribution": Posterizer.RANGES_AUTO},
-            {"steps": 4, "fillStrategy": Posterizer.FILL_MEDIAN, "rangeDistribution": Posterizer.RANGES_EQUAL},
+            {
+                "steps": 2,
+                "fillStrategy": Posterizer.FILL_SPREAD,
+                "rangeDistribution": Posterizer.RANGES_AUTO,
+            },
+            {
+                "steps": 3,
+                "fillStrategy": Posterizer.FILL_DOMINANT,
+                "rangeDistribution": Posterizer.RANGES_EQUAL,
+            },
+            {
+                "steps": 5,
+                "fillStrategy": Posterizer.FILL_MEAN,
+                "rangeDistribution": Posterizer.RANGES_AUTO,
+            },
+            {
+                "steps": 4,
+                "fillStrategy": Posterizer.FILL_MEDIAN,
+                "rangeDistribution": Posterizer.RANGES_EQUAL,
+            },
         ]
 
         for params in parameterSets:
             for name in self.testImages.keys():
                 inputPath = self.inputDir / f"{name}.png"
-                outputPath = self.outputDir / f"{name}_posterizer_steps{params['steps']}.svg"
+                outputPath = (
+                    self.outputDir / f"{name}_posterizer_steps{params['steps']}.svg"
+                )
                 posterizer = Posterizer(options=params)
                 try:
                     posterizer.loadImage(str(inputPath), callback=lambda err: None)
                     svgContent = posterizer.getSVG()
                     with open(outputPath, "w", encoding="utf-8") as f:
                         f.write(svgContent)
-                    self.assertTrue(outputPath.exists(),
-                                    f"Posterizer output '{outputPath.name}' was not created.")
+                    self.assertTrue(
+                        outputPath.exists(),
+                        f"Posterizer output '{outputPath.name}' was not created.",
+                    )
 
                     # Verify SVG content integrity
                     self.assertIn("<svg", svgContent, "SVG content missing <svg> tag.")
-                    self.assertIn("</svg>", svgContent, "SVG content missing </svg> tag.")
-                    self.assertIn("<path", svgContent, "SVG content missing <path> tag.")
+                    self.assertIn(
+                        "</svg>", svgContent, "SVG content missing </svg> tag."
+                    )
+                    self.assertIn(
+                        "<path", svgContent, "SVG content missing <path> tag."
+                    )
                 except Exception as e:
-                    self.fail(f"Batch processing failed for '{name}' with parameters {params}: {e}")
+                    self.fail(
+                        f"Batch processing failed for '{name}' with parameters {params}: {e}"
+                    )
 
     def test_PosterizerWithEdgeCaseImages(self):
         """
@@ -677,7 +821,11 @@ class TestAdvancedOperations(unittest.TestCase):
             pilImage.save(self.inputDir / f"{name}.png")
 
         # Define Posterizer parameters to test
-        params = {"steps": 3, "fillStrategy": Posterizer.FILL_MEAN, "rangeDistribution": Posterizer.RANGES_AUTO}
+        params = {
+            "steps": 3,
+            "fillStrategy": Posterizer.FILL_MEAN,
+            "rangeDistribution": Posterizer.RANGES_AUTO,
+        }
 
         for name in edgeCaseImages.keys():
             inputPath = self.inputDir / f"{name}.png"
@@ -688,8 +836,10 @@ class TestAdvancedOperations(unittest.TestCase):
                 svgContent = posterizer.getSVG()
                 with open(outputPath, "w", encoding="utf-8") as f:
                     f.write(svgContent)
-                self.assertTrue(outputPath.exists(),
-                                f"Posterizer output '{outputPath.name}' was not created for edge case '{name}'.")
+                self.assertTrue(
+                    outputPath.exists(),
+                    f"Posterizer output '{outputPath.name}' was not created for edge case '{name}'.",
+                )
                 self.assertIn("<svg", svgContent, "SVG content missing <svg> tag.")
                 self.assertIn("</svg>", svgContent, "SVG content missing </svg> tag.")
             except Exception as e:
@@ -713,7 +863,9 @@ class TestAdvancedOperations(unittest.TestCase):
         testName = "TransparentImage"
         pilImage.save(self.inputDir / f"{testName}.png")
 
-        posterizer = Posterizer(options={"steps": 2, "fillStrategy": Posterizer.FILL_DOMINANT})
+        posterizer = Posterizer(
+            options={"steps": 2, "fillStrategy": Posterizer.FILL_DOMINANT}
+        )
         inputPath = self.inputDir / f"{testName}.png"
         outputPath = self.outputDir / f"{testName}_posterizer.svg"
 
@@ -722,15 +874,21 @@ class TestAdvancedOperations(unittest.TestCase):
             svgContent = posterizer.getSVG()
             with open(outputPath, "w", encoding="utf-8") as f:
                 f.write(svgContent)
-            self.assertTrue(outputPath.exists(),
-                            f"Posterizer output '{outputPath.name}' was not created for transparent image.")
+            self.assertTrue(
+                outputPath.exists(),
+                f"Posterizer output '{outputPath.name}' was not created for transparent image.",
+            )
             self.assertIn("<svg", svgContent, "SVG content missing <svg> tag.")
             self.assertIn("</svg>", svgContent, "SVG content missing </svg> tag.")
             # Ensure that background is transparent
-            self.assertIn('fill-opacity="1.000"', svgContent,
-                          "SVG does not handle transparency correctly.")
+            self.assertIn(
+                'fill-opacity="1.000"',
+                svgContent,
+                "SVG does not handle transparency correctly.",
+            )
         except Exception as e:
             self.fail(f"Posterizer failed on transparent image '{testName}': {e}")
+
 
 class TestPerformance(unittest.TestCase):
     """
@@ -767,6 +925,7 @@ class TestPerformance(unittest.TestCase):
             If processing takes longer than the specified threshold.
         """
         import time
+
         inputPath = self.inputDir / self.largeImageName
         outputPath = self.outputDir / f"{self.largeImageName.stem}_potrace.svg"
         potrace = Potrace()
@@ -776,9 +935,12 @@ class TestPerformance(unittest.TestCase):
         processingTime = time.time() - startTime
         with open(outputPath, "w", encoding="utf-8") as f:
             f.write(svgContent)
-        self.assertTrue(outputPath.exists(),
-                        f"Potrace output '{outputPath.name}' was not created.")
-        self.assertLess(processingTime, 30, "Potrace processing took too long (over 30 seconds).")
+        self.assertTrue(
+            outputPath.exists(), f"Potrace output '{outputPath.name}' was not created."
+        )
+        self.assertLess(
+            processingTime, 30, "Potrace processing took too long (over 30 seconds)."
+        )
 
     def test_PosterizerPerformance(self):
         """
@@ -790,6 +952,7 @@ class TestPerformance(unittest.TestCase):
             If processing takes longer than the specified threshold.
         """
         import time
+
         inputPath = self.inputDir / self.largeImageName
         outputPath = self.outputDir / f"{self.largeImageName.stem}_posterizer.svg"
         posterizer = Posterizer({"steps": 5, "fillStrategy": Posterizer.FILL_MEAN})
@@ -799,9 +962,18 @@ class TestPerformance(unittest.TestCase):
         processingTime = time.time() - startTime
         with open(outputPath, "w", encoding="utf-8") as f:
             f.write(svgContent)
-        self.assertTrue(outputPath.exists(),
-                        f"Posterizer output '{outputPath.name}' was not created.")
-        self.assertLess(processingTime, 45, "Posterizer processing took too long (over 45 seconds).")
+        self.assertTrue(
+            outputPath.exists(),
+            f"Posterizer output '{outputPath.name}' was not created.",
+        )
+        self.assertLess(
+            processingTime, 45, "Posterizer processing took too long (over 45 seconds)."
+        )
+
 
 if __name__ == "__main__":
+
+    shutil.rmtree("./Input", ignore_errors=True)
+    shutil.rmtree("./Output", ignore_errors=True)
+
     unittest.main(verbosity=2)
