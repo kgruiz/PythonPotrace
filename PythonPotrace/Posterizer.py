@@ -38,24 +38,73 @@ class Posterizer:
             self._validateParameters(options)  # Added validation
             self.setParameters(options)
 
+    def _validateParameters(self, params):
+        if params and "steps" in params:
+            steps = params["steps"]
+            if isinstance(steps, list):
+                for s in steps:
+                    if not isinstance(s, int) or s < 0 or s > 255:
+                        raise ValueError(
+                            "Elements of 'steps' must be integers in [0..255]"
+                        )
+            elif isinstance(steps, int) and (
+                steps < 1 and steps != Posterizer.STEPS_AUTO
+            ):
+                raise ValueError("'steps' must be in [1..255], or -1 for STEPS_AUTO.")
+        if (
+            params
+            and "threshold" in params
+            and params["threshold"] != Potrace.THRESHOLD_AUTO
+        ):
+            if (
+                not isinstance(params["threshold"], (int, float))
+                or params["threshold"] < 0
+                or params["threshold"] > 255
+            ):
+                raise ValueError(
+                    "'threshold' must be in [0..255], or -1 for THRESHOLD_AUTO."
+                )
+
+        if (
+            params
+            and "fillStrategy" in params
+            and params["fillStrategy"]
+            not in [
+                Posterizer.FILL_SPREAD,
+                Posterizer.FILL_DOMINANT,
+                Posterizer.FILL_MEAN,
+                Posterizer.FILL_MEDIAN,
+            ]
+        ):
+            raise ValueError(
+                f"'fillStrategy' must be one of the following {Posterizer.FILL_SPREAD}, {Posterizer.FILL_DOMINANT}, {Posterizer.FILL_MEAN}, {Posterizer.FILL_MEDIAN}"
+            )
+
+        if (
+            params
+            and "rangeDistribution" in params
+            and params["rangeDistribution"]
+            not in [Posterizer.RANGES_AUTO, Posterizer.RANGES_EQUAL]
+        ):
+            raise ValueError(
+                f"'rangeDistribution' must be one of the following {Posterizer.RANGES_AUTO}, {Posterizer.RANGES_EQUAL}"
+            )
+
     def _getImageHistogram(self):
         return self._potrace._luminanceData.histogram()
 
     def _paramSteps(self, count=False):
         steps = self._params["steps"]
 
-        # If steps is an array, return as-is or its length
         if isinstance(steps, list):
             return len(steps) if count else steps
 
-        # If steps is STEPS_AUTO and threshold is also auto, default to 4 (some logic)
         if (
             steps == Posterizer.STEPS_AUTO
             and self._params["threshold"] == Potrace.THRESHOLD_AUTO
         ):
             return 4
 
-        # If steps is STEPS_AUTO but threshold is not auto
         blackOnWhite = self._params["blackOnWhite"]
         colorsCount = (
             self._paramThreshold() if blackOnWhite else 255 - self._paramThreshold()
@@ -196,7 +245,7 @@ class Posterizer:
         """
         blackOnWhite = self._params["blackOnWhite"]
         threshold = self._paramThreshold()
-        colorsToThreshold = threshold if blackOnWhite else (255 - threshold)
+        colorsToThreshold = threshold if blackOnWhite else 255 - threshold
         steps = self._paramSteps()
 
         stepSize = colorsToThreshold / steps if steps > 0 else colorsToThreshold
@@ -325,6 +374,8 @@ class Posterizer:
                 )
                 calculatedOpacity = round(clamp(calculatedOpacity, 0, 1), 3)
 
+            calculatedOpacity = clamp(calculatedOpacity, 0, 1)
+
             actualPrevLayersOpacity = (
                 actualPrevLayersOpacity
                 + (1 - actualPrevLayersOpacity) * calculatedOpacity
@@ -361,35 +412,16 @@ class Posterizer:
         if not params:
             return
 
+        self._validateParameters(params)
         self._potrace.setParameters(params)
 
-        if "steps" in params:
-            steps = params["steps"]
-            if isinstance(steps, list):
-                for s in steps:
-                    if not isinstance(s, int) or s < 0 or s > 255:
-                        raise ValueError(
-                            "Elements of 'steps' must be integers in [0..255]"
-                        )
-            elif isinstance(steps, int) and (
-                steps < 1 and steps != Posterizer.STEPS_AUTO
-            ):
-                raise ValueError("'steps' must be in [1..255], or -1 for STEPS_AUTO.")
-            # If no exception, we can store it
-        if "threshold" in params and params["threshold"] != Potrace.THRESHOLD_AUTO:
-            if (
-                not isinstance(params["threshold"], (int, float))
-                or params["threshold"] < 0
-                or params["threshold"] > 255
-            ):
-                raise ValueError(
-                    "'threshold' must be in [0..255], or -1 for THRESHOLD_AUTO."
-                )
         for key in self._params:
             if key in params:
+                oldVal = self._params[key]
                 self._params[key] = params[key]
+                if oldVal != self._params[key] and key not in ["background", "color"]:
+                    self._calculatedThreshold = None
         # Reset threshold if relevant param changed
-        self._calculatedThreshold = None
 
     def getSymbol(self, id_value):
         """

@@ -13,6 +13,8 @@ def index_xy(x, y):
     JS used a 2D array for color data (256x256).
     index_xy merges them: index = 256*x + y
     """
+    if not (0 <= x < COLOR_DEPTH and 0 <= y < COLOR_DEPTH):
+        return -1
     return COLOR_DEPTH * x + y
 
 
@@ -108,11 +110,14 @@ class Histogram:
                 if depth + 1 < amount + 1:
                     iterateRecursive(i, var_here, indexes_local, depth)
                 else:
-                    var_here += (
-                        self._lookupTableH[index_xy(i + 1, levelMax)]
-                        if (i + 1) <= levelMax
-                        else 0
-                    )
+                    if (i + 1) <= levelMax:
+                        var_here += (
+                            self._lookupTableH[index_xy(i + 1, levelMax)]
+                            if index_xy(i + 1, levelMax) != -1
+                            else 0
+                        )
+                    else:
+                        var_here += 0
                     if var_here > maxSig:
                         maxSig = var_here
                         colorStops = indexes_local[:]

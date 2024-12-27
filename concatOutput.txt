@@ -2,6 +2,23 @@ Contents of 'PythonPotrace' and its subdirectories
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 --------------------------------------------------------------------------------
+Parameters:
+- - - - - - - - - - - - - - - - - - - -
+Extensions:
+  - .py
+Exclude Patterns:
+  - N/A
+Case Sensitivity Options:
+  - Extensions: false
+  - Excludes: false
+  - All: false
+Other Options:
+  - Include Hidden: false
+- - - - - - - - - - - - - - - - - - - -
+Total matched files: 15
+================================================================================
+
+--------------------------------------------------------------------------------
 # Tree Representation
 ********************************************************************************
 Full tree of 'PythonPotrace':
@@ -122,30 +139,30 @@ PythonPotrace
 ================================================================================
 
 --------------------------------------------------------------------------------
-# Filtered Directory Structure List
+# Directory Structure List
 ********************************************************************************
-".": ["Docs, Examples, JSconcatOutput.txt, PythonPotrace, Tests, concatOutput.txt, pyproject.toml"]
-"./Docs": ["LICENSE, Outline.md, README.md"]
-"./Examples": ["exampleOutput.svg, exampleOutputPosterized.svg, yao.jpg"]
-"./PythonPotrace": ["Posterizer.py, Potrace.py, __init__.py, index.py, types, utils.py"]
-"./PythonPotrace/types": ["Bitmap.py, Curve.py, Histogram.py, Opti.py, Path.py, Point.py, Quad.py, Sum.py, __init__.py"]
-"./Tests": ["Input, Output, output.log, test.py"]
-"./Tests/Input": ["Advanced, Integration, Posterizer, Potrace"]
-"./Tests/Input/Advanced": ["FullyBlack.png, FullyWhite.png, Logo.png, MinimalVariation.png, Rocket.png, Skin.png, TransparentImage.png"]
-"./Tests/Input/Integration": ["Astronaut.png, Cat.png, Rocket.png"]
-"./Tests/Input/Posterizer": ["Astronaut.png, BinaryBlobs.png, Cat.png, Coffee.png, Colorwheel.png, HubbleDeepField.png, Immunohistochemistry.png, Logo.png, Retina.png, Rocket.png, Skin.png"]
-"./Tests/Input/Potrace": ["Astronaut.png, BinaryBlobs.png, Cat.png, Coffee.png, Colorwheel.png, HubbleDeepField.png, Immunohistochemistry.png, Logo.png, Retina.png, Rocket.png, Skin.png"]
-"./Tests/Output": ["Advanced, Integration, Posterizer, Potrace"]
-"./Tests/Output/Advanced": ["FullyBlack_posterizer.svg, FullyWhite_posterizer.svg, Logo_posterizer_steps2.svg, Logo_posterizer_steps3.svg, MinimalVariation_posterizer.svg, Rocket_posterizer_steps2.svg, Rocket_posterizer_steps3.svg, Skin_posterizer_steps2.svg, Skin_posterizer_steps3.svg, TransparentImage_posterizer.svg"]
-"./Tests/Output/Integration": ["Astronaut_potrace.svg, Astronaut_potrace_posterizer.svg, Cat_potrace.svg, Cat_potrace_posterizer.svg, Rocket_potrace.svg, Rocket_potrace_posterizer.svg"]
-"./Tests/Output/Posterizer": ["Astronaut_posterizer.svg, BinaryBlobs_posterizer.svg, Cat_posterizer.svg, Coffee_posterizer.svg, Colorwheel_posterizer.svg, HubbleDeepField_posterizer.svg, Immunohistochemistry_posterizer.svg, Logo_posterizer.svg, Retina_posterizer.svg, Rocket_posterizer.svg, Skin_posterizer.svg"]
-"./Tests/Output/Potrace": ["Astronaut_potrace.svg, BinaryBlobs_potrace.svg, Cat_potrace.svg, Coffee_potrace.svg, Colorwheel_potrace.svg, HubbleDeepField_potrace.svg, Immunohistochemistry_potrace.svg, Logo_potrace.svg, Retina_potrace.svg, Rocket_potrace.svg, Skin_potrace.svg"]
+"PythonPotrace": ["Docs, Examples, JSconcatOutput.txt, PythonPotrace, Tests, concatOutput.txt, pyproject.toml"]
+"PythonPotrace/Docs": ["LICENSE, Outline.md, README.md"]
+"PythonPotrace/Examples": ["exampleOutput.svg, exampleOutputPosterized.svg, yao.jpg"]
+"PythonPotrace/PythonPotrace": ["Posterizer.py, Potrace.py, __init__.py, index.py, types, utils.py"]
+"PythonPotrace/PythonPotrace/types": ["Bitmap.py, Curve.py, Histogram.py, Opti.py, Path.py, Point.py, Quad.py, Sum.py, __init__.py"]
+"PythonPotrace/Tests": ["Input, Output, output.log, test.py"]
+"PythonPotrace/Tests/Input": ["Advanced, Integration, Posterizer, Potrace"]
+"PythonPotrace/Tests/Input/Advanced": ["FullyBlack.png, FullyWhite.png, Logo.png, MinimalVariation.png, Rocket.png, Skin.png, TransparentImage.png"]
+"PythonPotrace/Tests/Input/Integration": ["Astronaut.png, Cat.png, Rocket.png"]
+"PythonPotrace/Tests/Input/Posterizer": ["Astronaut.png, BinaryBlobs.png, Cat.png, Coffee.png, Colorwheel.png, HubbleDeepField.png, Immunohistochemistry.png, Logo.png, Retina.png, Rocket.png, Skin.png"]
+"PythonPotrace/Tests/Input/Potrace": ["Astronaut.png, BinaryBlobs.png, Cat.png, Coffee.png, Colorwheel.png, HubbleDeepField.png, Immunohistochemistry.png, Logo.png, Retina.png, Rocket.png, Skin.png"]
+"PythonPotrace/Tests/Output": ["Advanced, Integration, Posterizer, Potrace"]
+"PythonPotrace/Tests/Output/Advanced": ["FullyBlack_posterizer.svg, FullyWhite_posterizer.svg, Logo_posterizer_steps2.svg, Logo_posterizer_steps3.svg, MinimalVariation_posterizer.svg, Rocket_posterizer_steps2.svg, Rocket_posterizer_steps3.svg, Skin_posterizer_steps2.svg, Skin_posterizer_steps3.svg, TransparentImage_posterizer.svg"]
+"PythonPotrace/Tests/Output/Integration": ["Astronaut_potrace.svg, Astronaut_potrace_posterizer.svg, Cat_potrace.svg, Cat_potrace_posterizer.svg, Rocket_potrace.svg, Rocket_potrace_posterizer.svg"]
+"PythonPotrace/Tests/Output/Posterizer": ["Astronaut_posterizer.svg, BinaryBlobs_posterizer.svg, Cat_posterizer.svg, Coffee_posterizer.svg, Colorwheel_posterizer.svg, HubbleDeepField_posterizer.svg, Immunohistochemistry_posterizer.svg, Logo_posterizer.svg, Retina_posterizer.svg, Rocket_posterizer.svg, Skin_posterizer.svg"]
+"PythonPotrace/Tests/Output/Potrace": ["Astronaut_potrace.svg, BinaryBlobs_potrace.svg, Cat_potrace.svg, Coffee_potrace.svg, Colorwheel_potrace.svg, HubbleDeepField_potrace.svg, Immunohistochemistry_potrace.svg, Logo_potrace.svg, Retina_potrace.svg, Rocket_potrace.svg, Skin_potrace.svg"]
 ================================================================================
 
 --------------------------------------------------------------------------------
-# test.py
-# Tests/test.py
-# ./Tests/test.py
+# Filename: "test.py"
+# Relative to Input Dir: "PythonPotrace/Tests/test.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/Tests/test.py"
 # Content:
 ********************************************************************************
 # test.py
@@ -195,7 +212,7 @@ class TestBitmap(unittest.TestCase):
     copying functionality, and boundary conditions of the Bitmap class.
     """
 
-    @timeout(5)
+    @timeout(10)
     def test_Initialization(self):
         """
         Test that a Bitmap initializes with correct width, height, and size.
@@ -212,7 +229,7 @@ class TestBitmap(unittest.TestCase):
         self.assertEqual(bmp.size, width * height, "Bitmap size mismatch.")
         self.assertEqual(len(bmp.data), width * height, "Bitmap data length mismatch.")
 
-    @timeout(5)
+    @timeout(10)
     def test_SetAndGetValue(self):
         """
         Test setting and retrieving pixel values in the Bitmap.
@@ -242,7 +259,7 @@ class TestBitmap(unittest.TestCase):
                     f"Pixel value mismatch at ({x}, {y}). Expected {expected_value}, got {actual_value}.",
                 )
 
-    @timeout(5)
+    @timeout(10)
     def test_Copy(self):
         """
         Test that copying a Bitmap preserves all pixel data correctly.
@@ -272,7 +289,7 @@ class TestBitmap(unittest.TestCase):
             list(bmp_copy.data), list(bmp_original.data), "Copied Bitmap data mismatch."
         )
 
-    @timeout(5)
+    @timeout(10)
     def test_BoundaryConditions(self):
         """
         Test accessing pixels outside the Bitmap boundaries.
@@ -298,7 +315,7 @@ class TestBitmap(unittest.TestCase):
             bmp.get_value_at(0, height), -1, "Out-of-bounds access did not return -1."
         )
 
-    @timeout(5)
+    @timeout(10)
     def test_BoundaryConditions(self):
         """
         Test accessing pixels outside the Bitmap boundaries.
@@ -333,7 +350,7 @@ class TestHistogram(unittest.TestCase):
     calculation of statistics, and thresholding functionality.
     """
 
-    @timeout(5)
+    @timeout(10)
     def test_HistogramConstruction(self):
         """
         Test that Histogram correctly counts pixel values from a Bitmap.
@@ -364,7 +381,7 @@ class TestHistogram(unittest.TestCase):
                     f"Histogram should have zero count for value {value}.",
                 )
 
-    @timeout(5)
+    @timeout(10)
     def test_GetStats(self):
         """
         Test that Histogram.getStats returns correct statistical values.
@@ -395,7 +412,7 @@ class TestHistogram(unittest.TestCase):
             msg="Standard deviation mismatch.",
         )
 
-    @timeout(5)
+    @timeout(20)
     def test_MultilevelThresholding(self):
         """
         Test that Histogram.multilevelThresholding correctly identifies thresholds.
@@ -420,7 +437,7 @@ class TestHistogram(unittest.TestCase):
             50 < thresholds[1] < 200, "Second threshold out of expected range."
         )
 
-    @timeout(5)
+    @timeout(10)
     def test_GetDominantColor(self):
         """
         Test that Histogram.getDominantColor correctly identifies the most frequent color.
@@ -1209,10 +1226,11 @@ if __name__ == "__main__":
     unittest.main(verbosity=2)
 
 ================================================================================
+
 --------------------------------------------------------------------------------
-# Potrace.py
-# PythonPotrace/Potrace.py
-# ./PythonPotrace/Potrace.py
+# Filename: "Potrace.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/Potrace.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/Potrace.py"
 # Content:
 ********************************************************************************
 # PythonPotrace/Potrace.py
@@ -1277,6 +1295,7 @@ class Potrace:
         }
 
         if options:
+            self._validateParameters(options)  # Added validation
             self.setParameters(options)
 
     def _validateParameters(self, params):
@@ -1373,7 +1392,7 @@ class Potrace:
         """
         Set or override existing parameters.
         """
-        self._validateParameters(newParams)
+        self._validateParameters(newParams)  # Added validation
         for key, val in newParams.items():
             if key in self._params:
                 oldVal = self._params[key]
@@ -1515,8 +1534,9 @@ class Potrace:
                 x = path.pt[i].x
                 y = path.pt[i].y
                 if y != y1:
-                    minY = y1 if y1 < y else y
-                    for col in range(min(x, path.maxX), path.maxX):
+                    minY = min(y1, y)
+                    maxX = path.maxX
+                    for col in range(min(x, path.maxX), maxX):
                         idx = xy_to_idx(col, minY)
                         blackMap.data[idx] = 1 - blackMap.data[idx]
                     y1 = y
@@ -1868,10 +1888,11 @@ class Potrace:
         return svg
 
 ================================================================================
+
 --------------------------------------------------------------------------------
-# Quad.py
-# PythonPotrace/types/Quad.py
-# ./PythonPotrace/types/Quad.py
+# Filename: "Quad.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/types/Quad.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/types/Quad.py"
 # Content:
 ********************************************************************************
 # PythonPotrace/types/Quad.py
@@ -1912,10 +1933,11 @@ class Quad:
             raise IndexError("Quad index out of range")
 
 ================================================================================
+
 --------------------------------------------------------------------------------
-# Histogram.py
-# PythonPotrace/types/Histogram.py
-# ./PythonPotrace/types/Histogram.py
+# Filename: "Histogram.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/types/Histogram.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/types/Histogram.py"
 # Content:
 ********************************************************************************
 # PythonPotrace/types/Histogram.py
@@ -2180,10 +2202,11 @@ class Histogram:
         self._lookupTableH = H
 
 ================================================================================
+
 --------------------------------------------------------------------------------
-# __init__.py
-# PythonPotrace/types/__init__.py
-# ./PythonPotrace/types/__init__.py
+# Filename: "__init__.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/types/__init__.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/types/__init__.py"
 # Content:
 ********************************************************************************
 # PythonPotrace/types/__init__.py
@@ -2208,10 +2231,11 @@ __all__ = [
     "Sum"
 ]
 ================================================================================
+
 --------------------------------------------------------------------------------
-# Opti.py
-# PythonPotrace/types/Opti.py
-# ./PythonPotrace/types/Opti.py
+# Filename: "Opti.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/types/Opti.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/types/Opti.py"
 # Content:
 ********************************************************************************
 # Opti.py
@@ -2231,10 +2255,11 @@ class Opti:
         self.alpha = 0
 
 ================================================================================
+
 --------------------------------------------------------------------------------
-# Curve.py
-# PythonPotrace/types/Curve.py
-# ./PythonPotrace/types/Curve.py
+# Filename: "Curve.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/types/Curve.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/types/Curve.py"
 # Content:
 ********************************************************************************
 # Curve.py
@@ -2261,10 +2286,11 @@ class Curve:
         self.beta = [None] * n
 
 ================================================================================
+
 --------------------------------------------------------------------------------
-# Point.py
-# PythonPotrace/types/Point.py
-# ./PythonPotrace/types/Point.py
+# Filename: "Point.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/types/Point.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/types/Point.py"
 # Content:
 ********************************************************************************
 # Point.py
@@ -2298,10 +2324,11 @@ class Point:
         return Point(self.x, self.y)
 
 ================================================================================
+
 --------------------------------------------------------------------------------
-# Sum.py
-# PythonPotrace/types/Sum.py
-# ./PythonPotrace/types/Sum.py
+# Filename: "Sum.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/types/Sum.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/types/Sum.py"
 # Content:
 ********************************************************************************
 # Sum.py
@@ -2332,10 +2359,11 @@ class Sum:
         self.y2 = y2
 
 ================================================================================
+
 --------------------------------------------------------------------------------
-# Bitmap.py
-# PythonPotrace/types/Bitmap.py
-# ./PythonPotrace/types/Bitmap.py
+# Filename: "Bitmap.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/types/Bitmap.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/types/Bitmap.py"
 # Content:
 ********************************************************************************
 # PythonPotrace/types/Bitmap.py
@@ -2423,10 +2451,11 @@ class Bitmap:
         return self._histogram
 
 ================================================================================
+
 --------------------------------------------------------------------------------
-# Path.py
-# PythonPotrace/types/Path.py
-# ./PythonPotrace/types/Path.py
+# Filename: "Path.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/types/Path.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/types/Path.py"
 # Content:
 ********************************************************************************
 # path.py
@@ -2448,10 +2477,11 @@ class Path:
         self.maxY = -1
 
 ================================================================================
+
 --------------------------------------------------------------------------------
-# index.py
-# PythonPotrace/index.py
-# ./PythonPotrace/index.py
+# Filename: "index.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/index.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/index.py"
 # Content:
 ********************************************************************************
 # index.py
@@ -2547,10 +2577,11 @@ def posterize(file, options=None, cb=None):
 
     posterizer.loadImage(file, after_load)
 ================================================================================
+
 --------------------------------------------------------------------------------
-# __init__.py
-# PythonPotrace/__init__.py
-# ./PythonPotrace/__init__.py
+# Filename: "__init__.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/__init__.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/__init__.py"
 # Content:
 ********************************************************************************
 # PythonPotrace/__init__.py
@@ -2630,10 +2661,11 @@ def get_types():
 
 types = get_types()
 ================================================================================
+
 --------------------------------------------------------------------------------
-# utils.py
-# PythonPotrace/utils.py
-# ./PythonPotrace/utils.py
+# Filename: "utils.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/utils.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/utils.py"
 # Content:
 ********************************************************************************
 # PythonPotrace/utils.py
@@ -3033,10 +3065,11 @@ def tangent(p0, p1, p2, p3, q0, q1):
         return -1.0
 
 ================================================================================
+
 --------------------------------------------------------------------------------
-# Posterizer.py
-# PythonPotrace/Posterizer.py
-# ./PythonPotrace/Posterizer.py
+# Filename: "Posterizer.py"
+# Relative to Input Dir: "PythonPotrace/PythonPotrace/Posterizer.py"
+# Absolute Path: "/Users/kadengruizenga/Development/Packages/PythonPotrace/PythonPotrace/Posterizer.py"
 # Content:
 ********************************************************************************
 # PythonPotrace/Posterizer.py
@@ -3076,7 +3109,60 @@ class Posterizer:
         }
 
         if options:
+            self._validateParameters(options)  # Added validation
             self.setParameters(options)
+
+    def _validateParameters(self, params):
+        if params and "steps" in params:
+            steps = params["steps"]
+            if isinstance(steps, list):
+                for s in steps:
+                    if not isinstance(s, int) or s < 0 or s > 255:
+                        raise ValueError(
+                            "Elements of 'steps' must be integers in [0..255]"
+                        )
+            elif isinstance(steps, int) and (
+                steps < 1 and steps != Posterizer.STEPS_AUTO
+            ):
+                raise ValueError("'steps' must be in [1..255], or -1 for STEPS_AUTO.")
+        if (
+            params
+            and "threshold" in params
+            and params["threshold"] != Potrace.THRESHOLD_AUTO
+        ):
+            if (
+                not isinstance(params["threshold"], (int, float))
+                or params["threshold"] < 0
+                or params["threshold"] > 255
+            ):
+                raise ValueError(
+                    "'threshold' must be in [0..255], or -1 for THRESHOLD_AUTO."
+                )
+
+        if (
+            params
+            and "fillStrategy" in params
+            and params["fillStrategy"]
+            not in [
+                Posterizer.FILL_SPREAD,
+                Posterizer.FILL_DOMINANT,
+                Posterizer.FILL_MEAN,
+                Posterizer.FILL_MEDIAN,
+            ]
+        ):
+            raise ValueError(
+                f"'fillStrategy' must be one of the following {Posterizer.FILL_SPREAD}, {Posterizer.FILL_DOMINANT}, {Posterizer.FILL_MEAN}, {Posterizer.FILL_MEDIAN}"
+            )
+
+        if (
+            params
+            and "rangeDistribution" in params
+            and params["rangeDistribution"]
+            not in [Posterizer.RANGES_AUTO, Posterizer.RANGES_EQUAL]
+        ):
+            raise ValueError(
+                f"'rangeDistribution' must be one of the following {Posterizer.RANGES_AUTO}, {Posterizer.RANGES_EQUAL}"
+            )
 
     def _getImageHistogram(self):
         return self._potrace._luminanceData.histogram()
@@ -3365,6 +3451,8 @@ class Posterizer:
                 )
                 calculatedOpacity = round(clamp(calculatedOpacity, 0, 1), 3)
 
+            calculatedOpacity = clamp(calculatedOpacity, 0, 1)
+
             actualPrevLayersOpacity = (
                 actualPrevLayersOpacity
                 + (1 - actualPrevLayersOpacity) * calculatedOpacity
@@ -3401,37 +3489,16 @@ class Posterizer:
         if not params:
             return
 
+        self._validateParameters(params)
         self._potrace.setParameters(params)
-
-        if "steps" in params:
-            steps = params["steps"]
-            if isinstance(steps, list):
-                for s in steps:
-                    if not isinstance(s, int) or s < 0 or s > 255:
-                        raise ValueError(
-                            "Elements of 'steps' must be integers in [0..255]"
-                        )
-            elif isinstance(steps, int) and (
-                steps < 1 and steps != Posterizer.STEPS_AUTO
-            ):
-                raise ValueError("'steps' must be in [1..255], or -1 for STEPS_AUTO.")
-            # If no exception, we can store it
-        if "threshold" in params and params["threshold"] != Potrace.THRESHOLD_AUTO:
-            if (
-                not isinstance(params["threshold"], (int, float))
-                or params["threshold"] < 0
-                or params["threshold"] > 255
-            ):
-                raise ValueError(
-                    "'threshold' must be in [0..255], or -1 for THRESHOLD_AUTO."
-                )
 
         for key in self._params:
             if key in params:
+                oldVal = self._params[key]
                 self._params[key] = params[key]
-
+                if oldVal != self._params[key] and key not in ["background", "color"]:
+                    self._calculatedThreshold = None
         # Reset threshold if relevant param changed
-        self._calculatedThreshold = None
 
     def getSymbol(self, id_value):
         """
