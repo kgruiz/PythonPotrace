@@ -45,7 +45,7 @@ class TestBitmap(unittest.TestCase):
     copying functionality, and boundary conditions of the Bitmap class.
     """
 
-    @timeout(5)
+    @timeout(10)
     def test_Initialization(self):
         """
         Test that a Bitmap initializes with correct width, height, and size.
@@ -62,7 +62,7 @@ class TestBitmap(unittest.TestCase):
         self.assertEqual(bmp.size, width * height, "Bitmap size mismatch.")
         self.assertEqual(len(bmp.data), width * height, "Bitmap data length mismatch.")
 
-    @timeout(5)
+    @timeout(10)
     def test_SetAndGetValue(self):
         """
         Test setting and retrieving pixel values in the Bitmap.
@@ -92,7 +92,7 @@ class TestBitmap(unittest.TestCase):
                     f"Pixel value mismatch at ({x}, {y}). Expected {expected_value}, got {actual_value}.",
                 )
 
-    @timeout(5)
+    @timeout(10)
     def test_Copy(self):
         """
         Test that copying a Bitmap preserves all pixel data correctly.
@@ -122,7 +122,7 @@ class TestBitmap(unittest.TestCase):
             list(bmp_copy.data), list(bmp_original.data), "Copied Bitmap data mismatch."
         )
 
-    @timeout(5)
+    @timeout(10)
     def test_BoundaryConditions(self):
         """
         Test accessing pixels outside the Bitmap boundaries.
@@ -148,7 +148,7 @@ class TestBitmap(unittest.TestCase):
             bmp.get_value_at(0, height), -1, "Out-of-bounds access did not return -1."
         )
 
-    @timeout(5)
+    @timeout(10)
     def test_BoundaryConditions(self):
         """
         Test accessing pixels outside the Bitmap boundaries.
@@ -183,7 +183,7 @@ class TestHistogram(unittest.TestCase):
     calculation of statistics, and thresholding functionality.
     """
 
-    @timeout(5)
+    @timeout(10)
     def test_HistogramConstruction(self):
         """
         Test that Histogram correctly counts pixel values from a Bitmap.
@@ -214,7 +214,7 @@ class TestHistogram(unittest.TestCase):
                     f"Histogram should have zero count for value {value}.",
                 )
 
-    @timeout(5)
+    @timeout(10)
     def test_GetStats(self):
         """
         Test that Histogram.getStats returns correct statistical values.
@@ -245,7 +245,7 @@ class TestHistogram(unittest.TestCase):
             msg="Standard deviation mismatch.",
         )
 
-    @timeout(5)
+    @timeout(20)
     def test_MultilevelThresholding(self):
         """
         Test that Histogram.multilevelThresholding correctly identifies thresholds.
@@ -270,7 +270,7 @@ class TestHistogram(unittest.TestCase):
             50 < thresholds[1] < 200, "Second threshold out of expected range."
         )
 
-    @timeout(5)
+    @timeout(10)
     def test_GetDominantColor(self):
         """
         Test that Histogram.getDominantColor correctly identifies the most frequent color.

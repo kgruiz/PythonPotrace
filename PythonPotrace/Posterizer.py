@@ -35,6 +35,7 @@ class Posterizer:
         }
 
         if options:
+            self._validateParameters(options)  # Added validation
             self.setParameters(options)
 
     def _getImageHistogram(self):
@@ -384,11 +385,9 @@ class Posterizer:
                 raise ValueError(
                     "'threshold' must be in [0..255], or -1 for THRESHOLD_AUTO."
                 )
-
         for key in self._params:
             if key in params:
                 self._params[key] = params[key]
-
         # Reset threshold if relevant param changed
         self._calculatedThreshold = None
 

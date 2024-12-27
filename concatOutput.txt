@@ -75,16 +75,50 @@ PythonPotrace
 │   │   │   ├── FullyBlack_posterizer.svg
 │   │   │   ├── FullyWhite_posterizer.svg
 │   │   │   ├── Logo_posterizer_steps2.svg
+│   │   │   ├── Logo_posterizer_steps3.svg
+│   │   │   ├── MinimalVariation_posterizer.svg
+│   │   │   ├── Rocket_posterizer_steps2.svg
+│   │   │   ├── Rocket_posterizer_steps3.svg
+│   │   │   ├── Skin_posterizer_steps2.svg
+│   │   │   ├── Skin_posterizer_steps3.svg
 │   │   │   └── TransparentImage_posterizer.svg
 │   │   ├── Integration
+│   │   │   ├── Astronaut_potrace.svg
+│   │   │   ├── Astronaut_potrace_posterizer.svg
+│   │   │   ├── Cat_potrace.svg
+│   │   │   ├── Cat_potrace_posterizer.svg
+│   │   │   ├── Rocket_potrace.svg
+│   │   │   └── Rocket_potrace_posterizer.svg
 │   │   ├── Posterizer
+│   │   │   ├── Astronaut_posterizer.svg
+│   │   │   ├── BinaryBlobs_posterizer.svg
+│   │   │   ├── Cat_posterizer.svg
+│   │   │   ├── Coffee_posterizer.svg
+│   │   │   ├── Colorwheel_posterizer.svg
+│   │   │   ├── HubbleDeepField_posterizer.svg
+│   │   │   ├── Immunohistochemistry_posterizer.svg
+│   │   │   ├── Logo_posterizer.svg
+│   │   │   ├── Retina_posterizer.svg
+│   │   │   ├── Rocket_posterizer.svg
+│   │   │   └── Skin_posterizer.svg
 │   │   └── Potrace
+│   │       ├── Astronaut_potrace.svg
+│   │       ├── BinaryBlobs_potrace.svg
+│   │       ├── Cat_potrace.svg
+│   │       ├── Coffee_potrace.svg
+│   │       ├── Colorwheel_potrace.svg
+│   │       ├── HubbleDeepField_potrace.svg
+│   │       ├── Immunohistochemistry_potrace.svg
+│   │       ├── Logo_potrace.svg
+│   │       ├── Retina_potrace.svg
+│   │       ├── Rocket_potrace.svg
+│   │       └── Skin_potrace.svg
 │   ├── output.log
 │   └── test.py
 ├── concatOutput.txt
 └── pyproject.toml
 
-16 directories, 61 files
+16 directories, 95 files
 ================================================================================
 
 --------------------------------------------------------------------------------
@@ -102,10 +136,10 @@ PythonPotrace
 "./Tests/Input/Posterizer": ["Astronaut.png, BinaryBlobs.png, Cat.png, Coffee.png, Colorwheel.png, HubbleDeepField.png, Immunohistochemistry.png, Logo.png, Retina.png, Rocket.png, Skin.png"]
 "./Tests/Input/Potrace": ["Astronaut.png, BinaryBlobs.png, Cat.png, Coffee.png, Colorwheel.png, HubbleDeepField.png, Immunohistochemistry.png, Logo.png, Retina.png, Rocket.png, Skin.png"]
 "./Tests/Output": ["Advanced, Integration, Posterizer, Potrace"]
-"./Tests/Output/Advanced": ["FullyBlack_posterizer.svg, FullyWhite_posterizer.svg, Logo_posterizer_steps2.svg, TransparentImage_posterizer.svg"]
-"./Tests/Output/Integration": []
-"./Tests/Output/Posterizer": []
-"./Tests/Output/Potrace": []
+"./Tests/Output/Advanced": ["FullyBlack_posterizer.svg, FullyWhite_posterizer.svg, Logo_posterizer_steps2.svg, Logo_posterizer_steps3.svg, MinimalVariation_posterizer.svg, Rocket_posterizer_steps2.svg, Rocket_posterizer_steps3.svg, Skin_posterizer_steps2.svg, Skin_posterizer_steps3.svg, TransparentImage_posterizer.svg"]
+"./Tests/Output/Integration": ["Astronaut_potrace.svg, Astronaut_potrace_posterizer.svg, Cat_potrace.svg, Cat_potrace_posterizer.svg, Rocket_potrace.svg, Rocket_potrace_posterizer.svg"]
+"./Tests/Output/Posterizer": ["Astronaut_posterizer.svg, BinaryBlobs_posterizer.svg, Cat_posterizer.svg, Coffee_posterizer.svg, Colorwheel_posterizer.svg, HubbleDeepField_posterizer.svg, Immunohistochemistry_posterizer.svg, Logo_posterizer.svg, Retina_posterizer.svg, Rocket_posterizer.svg, Skin_posterizer.svg"]
+"./Tests/Output/Potrace": ["Astronaut_potrace.svg, BinaryBlobs_potrace.svg, Cat_potrace.svg, Coffee_potrace.svg, Colorwheel_potrace.svg, HubbleDeepField_potrace.svg, Immunohistochemistry_potrace.svg, Logo_potrace.svg, Retina_potrace.svg, Rocket_potrace.svg, Skin_potrace.svg"]
 ================================================================================
 
 --------------------------------------------------------------------------------
@@ -1386,50 +1420,27 @@ class Potrace:
             return y * blackMap.width + x
 
         def majority(x, y):
-            # replicates the 'majority' logic from original
+            # Replicate JS logic: +1 if pixel is 1, -1 if pixel is 0
+            # Use get_value_at_safe so out-of-bounds returns 0
             for i in range(2, 5):
                 ct = 0
                 for a in range(-i + 1, i):
-                    ct += (
-                        blackMap.get_value_at(x + a, y + i - 1)
-                        if blackMap.get_value_at(x + a, y + i - 1) != -1
-                        else 0
-                    )
-                    ct -= (
-                        1 - blackMap.get_value_at(x + a, y + i - 1)
-                        if blackMap.get_value_at(x + a, y + i - 1) != -1
-                        else 0
-                    )
-                    ct += (
-                        blackMap.get_value_at(x + i - 1, y + a - 1)
-                        if blackMap.get_value_at(x + i - 1, y + a - 1) != -1
-                        else 0
-                    )
-                    ct -= (
-                        1 - blackMap.get_value_at(x + i - 1, y + a - 1)
-                        if blackMap.get_value_at(x + i - 1, y + a - 1) != -1
-                        else 0
-                    )
-                    ct += (
-                        blackMap.get_value_at(x + a - 1, y - i)
-                        if blackMap.get_value_at(x + a - 1, y - i) != -1
-                        else 0
-                    )
-                    ct -= (
-                        1 - blackMap.get_value_at(x + a - 1, y - i)
-                        if blackMap.get_value_at(x + a - 1, y - i) != -1
-                        else 0
-                    )
-                    ct += (
-                        blackMap.get_value_at(x - i, y + a)
-                        if blackMap.get_value_at(x - i, y + a) != -1
-                        else 0
-                    )
-                    ct -= (
-                        1 - blackMap.get_value_at(x - i, y + a)
-                        if blackMap.get_value_at(x - i, y + a) != -1
-                        else 0
-                    )
+                    # top line
+                    val_top = blackMap.get_value_at_safe(x + a, y + i - 1)
+                    ct += 1 if val_top == 1 else -1
+
+                    # right line
+                    val_right = blackMap.get_value_at_safe(x + i - 1, y + a - 1)
+                    ct += 1 if val_right == 1 else -1
+
+                    # bottom line
+                    val_bottom = blackMap.get_value_at_safe(x + a - 1, y - i)
+                    ct += 1 if val_bottom == 1 else -1
+
+                    # left line
+                    val_left = blackMap.get_value_at_safe(x - i, y + a)
+                    ct += 1 if val_left == 1 else -1
+
                 if ct > 0:
                     return 1
                 elif ct < 0:
@@ -1461,10 +1472,10 @@ class Potrace:
                     break
 
                 # left & right checks
-                l = blackMap.get_value_at(
+                l = blackMap.get_value_at_safe(
                     x + (dirx + diry - 1) // 2, y + (diry - dirx - 1) // 2
                 )
-                r = blackMap.get_value_at(
+                r = blackMap.get_value_at_safe(
                     x + (dirx - diry - 1) // 2, y + (diry + dirx - 1) // 2
                 )
 
@@ -1498,19 +1509,17 @@ class Potrace:
             return p
 
         def xorPath(path):
-            len_path = path.len
-            py = path.pt[0].y
-            px = path.pt[0].x
-            for i in range(1, len_path):
+            y1 = path.pt[0].y
+            n = path.len
+            for i in range(1, n):
                 x = path.pt[i].x
                 y = path.pt[i].y
-                if y != py:
-                    minY = min(py, y)
-                    maxX = path.maxX
-                    for col in range(x, maxX):
+                if y != y1:
+                    minY = y1 if y1 < y else y
+                    for col in range(min(x, path.maxX), path.maxX):
                         idx = xy_to_idx(col, minY)
                         blackMap.data[idx] = 1 - blackMap.data[idx]
-                    py = y
+                    y1 = y
 
         currentIndex = 0
         while True:
@@ -2007,27 +2016,25 @@ class Histogram:
 
         def iterateRecursive(startingPoint, prevVariance, indexes, previousDepth):
             nonlocal colorStops, maxSig
-            startingPoint_local = startingPoint + 1 if startingPoint is not None else 1
+            # In JS: startingPoint = (startingPoint || 0) + 1
+            start = (startingPoint if startingPoint is not None else 0) + 1
             variance_local = prevVariance
             indexes_local = indexes[:]
             depth = previousDepth + 1
 
-            for i in range(startingPoint_local, levelMax - amount + previousDepth + 1):
-                varHere = (
-                    variance_local
-                    + self._lookupTableH[index_xy(startingPoint_local, i)]
-                )
+            for i in range(start, levelMax - amount + previousDepth):
+                var_here = variance_local + self._lookupTableH[index_xy(start, i)]
                 indexes_local[depth - 1] = i
                 if depth + 1 < amount + 1:
-                    iterateRecursive(i, varHere, indexes_local, depth)
+                    iterateRecursive(i, var_here, indexes_local, depth)
                 else:
-                    varHere += (
+                    var_here += (
                         self._lookupTableH[index_xy(i + 1, levelMax)]
                         if (i + 1) <= levelMax
                         else 0
                     )
-                    if varHere > maxSig:
-                        maxSig = varHere
+                    if var_here > maxSig:
+                        maxSig = var_here
                         colorStops = indexes_local[:]
 
         iterateRecursive(levelMin, 0, [0] * amount, 0)
@@ -2354,17 +2361,30 @@ class Bitmap:
 
     def get_value_at(self, x, y=None):
         """
-        If x is int and y not given, treat x as index.
-        If x is int and y is given, treat x,y as coords.
+        For the test suite, if out-of-bounds => return -1.
+        If in range => return the actual byte value (0..255).
         """
         if y is None:
+            # interpret x as a single index
             idx = x
+            if idx < 0 or idx >= self.size:
+                return -1
+            return self.data[idx]
         else:
+            # interpret x,y as coordinates
             if not between(x, 0, self.width) or not between(y, 0, self.height):
                 return -1
             idx = y * self.width + x
-        if idx < 0 or idx >= self.size:
-            return -1
+            return self.data[idx]
+
+    def get_value_at_safe(self, x, y):
+        """
+        Internal helper: treat out-of-bounds as 0,
+        which is what the JS code effectively did for path tracing.
+        """
+        if x < 0 or x >= self.width or y < 0 or y >= self.height:
+            return 0
+        idx = y * self.width + x
         return self.data[idx]
 
     def indexToPoint(self, index):
@@ -2880,14 +2900,10 @@ def luminance(r, g, b):
 
 def between(val, min_val, max_val):
     """
-    Check if a value is between min_val and max_val, inclusive.
-
-    :param val: The value to check.
-    :param min_val: The minimum bound.
-    :param max_val: The maximum bound.
-    :return: True if val is between min_val and max_val, else False.
+    Check if a value is between min_val and max_val, left-inclusive, right-exclusive.
+    This matches typical 0 <= val < width usage in the JS code.
     """
-    return min_val <= val <= max_val
+    return min_val <= val < max_val
 
 
 def clamp(val, min_val, max_val):
@@ -3335,6 +3351,7 @@ class Posterizer:
         result = []
         for colorStop in ranges:
             thisLayerOpacity = colorStop["colorIntensity"]
+
             if thisLayerOpacity == 0:
                 result.append("")
                 continue
@@ -3356,10 +3373,12 @@ class Posterizer:
             # Now do the trace for that threshold
             self._potrace.setParameters({"threshold": colorStop["value"]})
             element = self._potrace.getPathTag("" if noFillColor else None)
-            # Insert fill-opacity
+
+            # Insert fill-opacity, even if zero, otherwise the layer wont be transparent!
             element = setHtmlAttr(element, "fill-opacity", f"{calculatedOpacity:.3f}")
 
             canBeIgnored = (calculatedOpacity == 0) or (' d=""' in element)
+
             result.append("" if canBeIgnored else element)
 
         return result
@@ -3397,6 +3416,15 @@ class Posterizer:
             ):
                 raise ValueError("'steps' must be in [1..255], or -1 for STEPS_AUTO.")
             # If no exception, we can store it
+        if "threshold" in params and params["threshold"] != Potrace.THRESHOLD_AUTO:
+            if (
+                not isinstance(params["threshold"], (int, float))
+                or params["threshold"] < 0
+                or params["threshold"] > 255
+            ):
+                raise ValueError(
+                    "'threshold' must be in [0..255], or -1 for THRESHOLD_AUTO."
+                )
 
         for key in self._params:
             if key in params:

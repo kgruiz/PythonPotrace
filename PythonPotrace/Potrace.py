@@ -60,6 +60,7 @@ class Potrace:
         }
 
         if options:
+            self._validateParameters(options)  # Added validation
             self.setParameters(options)
 
     def _validateParameters(self, params):
@@ -156,7 +157,7 @@ class Potrace:
         """
         Set or override existing parameters.
         """
-        self._validateParameters(newParams)
+        self._validateParameters(newParams)  # Added validation
         for key, val in newParams.items():
             if key in self._params:
                 oldVal = self._params[key]
@@ -298,8 +299,9 @@ class Potrace:
                 x = path.pt[i].x
                 y = path.pt[i].y
                 if y != y1:
-                    minY = y1 if y1 < y else y
-                    for col in range(min(x, path.maxX), path.maxX):
+                    minY = min(y1, y)
+                    maxX = path.maxX
+                    for col in range(min(x, path.maxX), maxX):
                         idx = xy_to_idx(col, minY)
                         blackMap.data[idx] = 1 - blackMap.data[idx]
                     y1 = y
