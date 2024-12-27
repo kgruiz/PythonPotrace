@@ -1,9 +1,11 @@
-# Bitmap.py
+# PythonPotrace/types/Bitmap.py
 
 import math
-from .Point import Point
-from .Histogram import Histogram
+
 from ..utils import between
+from .Histogram import Histogram
+from .Point import Point
+
 
 class Bitmap:
     """
@@ -17,7 +19,7 @@ class Bitmap:
         self.data = bytearray(self.size)
         self._histogram = None
 
-    def getValueAt(self, x, y=None):
+    def get_value_at(self, x, y=None):
         """
         If x is int and y not given, treat x as index.
         If x is int and y is given, treat x,y as coords.
@@ -26,10 +28,10 @@ class Bitmap:
             idx = x
         else:
             if not between(x, 0, self.width) or not between(y, 0, self.height):
-                return 0
+                return -1
             idx = y * self.width + x
         if idx < 0 or idx >= self.size:
-            return 0
+            return -1
         return self.data[idx]
 
     def indexToPoint(self, index):

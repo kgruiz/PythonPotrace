@@ -1,10 +1,12 @@
-# Histogram.py
+# PythonPotrace/types/Histogram.py
 
 import math
-from ..utils import clamp, luminance, between
+
+from ..utils import between, clamp, luminance
 
 COLOR_DEPTH = 256
 COLOR_RANGE_END = COLOR_DEPTH - 1
+
 
 def index_xy(x, y):
     """
@@ -12,6 +14,7 @@ def index_xy(x, y):
     index_xy merges them: index = 256*x + y
     """
     return COLOR_DEPTH * x + y
+
 
 def normalizeMinMax(levelMin, levelMax):
     if isinstance(levelMin, (int, float)):
@@ -28,11 +31,12 @@ def normalizeMinMax(levelMin, levelMax):
         raise ValueError("Invalid range")
     return (levelMin, levelMax)
 
+
 class Histogram:
-    MODE_LUMINANCE = 'luminance'
-    MODE_R = 'r'
-    MODE_G = 'g'
-    MODE_B = 'b'
+    MODE_LUMINANCE = "luminance"
+    MODE_R = "r"
+    MODE_G = "g"
+    MODE_B = "b"
 
     def __init__(self, imageSource, mode=None):
         """
@@ -57,7 +61,7 @@ class Histogram:
             ArrayType = list
         else:
             ArrayType = list
-        self.data = [0]*COLOR_DEPTH
+        self.data = [0] * COLOR_DEPTH
         self.pixels = imageSize
 
     def _collectValuesBitmap(self, bmp):
@@ -92,23 +96,30 @@ class Histogram:
 
         def iterateRecursive(startingPoint, prevVariance, indexes, previousDepth):
             nonlocal colorStops, maxSig
-            startingPoint_local = startingPoint + 1
+            startingPoint_local = startingPoint + 1 if startingPoint is not None else 1
             variance_local = prevVariance
             indexes_local = indexes[:]
             depth = previousDepth + 1
 
             for i in range(startingPoint_local, levelMax - amount + previousDepth + 1):
-                varHere = variance_local + self._lookupTableH[index_xy(startingPoint_local, i)]
+                varHere = (
+                    variance_local
+                    + self._lookupTableH[index_xy(startingPoint_local, i)]
+                )
                 indexes_local[depth - 1] = i
                 if depth + 1 < amount + 1:
                     iterateRecursive(i, varHere, indexes_local, depth)
                 else:
-                    varHere += self._lookupTableH[index_xy(i+1, levelMax)] if (i+1)<=levelMax else 0
+                    varHere += (
+                        self._lookupTableH[index_xy(i + 1, levelMax)]
+                        if (i + 1) <= levelMax
+                        else 0
+                    )
                     if varHere > maxSig:
                         maxSig = varHere
                         colorStops = indexes_local[:]
 
-        iterateRecursive(levelMin, 0, [0]*amount, 0)
+        iterateRecursive(levelMin, 0, [0] * amount, 0)
         return colorStops if colorStops else []
 
     def autoThreshold(self, levelMin=None, levelMax=None):
@@ -124,7 +135,7 @@ class Histogram:
         if levelMin == levelMax:
             return levelMin if colors[levelMin] else -1
 
-        for i in range(levelMin, levelMax+1):
+        for i in range(levelMin, levelMax + 1):
             tmpSum = 0
             for j in range(int(tolerance / -2), tolerance):
                 idx = i + j
@@ -135,7 +146,7 @@ class Histogram:
                 dominantValue = tmpSum
             elif tmpSum == dominantValue:
                 # if tie, pick whichever has more direct hits
-                if dominantIndex<0 or colors[i] > colors[dominantIndex]:
+                if dominantIndex < 0 or colors[i] > colors[dominantIndex]:
                     dominantIndex = i
 
         return dominantIndex if dominantValue > 0 else -1
@@ -157,55 +168,57 @@ class Histogram:
         sumOfVals = 0
         uniqueCount = 0
         mostPixels = 0
-        for i in range(levelMin, levelMax+1):
+        for i in range(levelMin, levelMax + 1):
             c = d[i]
             pixelsTotal += c
-            sumOfVals += c*i
-            if c>0:
-                uniqueCount+=1
-            if c> mostPixels:
+            sumOfVals += c * i
+            if c > 0:
+                uniqueCount += 1
+            if c > mostPixels:
                 mostPixels = c
 
-        meanValue = sumOfVals / pixelsTotal if pixelsTotal else float('nan')
-        pxPerLevelMean = pixelsTotal / (levelMax - levelMin) if (levelMax>levelMin) else float('nan')
-        pxPerLevelMedian = pixelsTotal / uniqueCount if uniqueCount else float('nan')
+        meanValue = sumOfVals / pixelsTotal if pixelsTotal else float("nan")
+        pxPerLevelMean = (
+            pixelsTotal / (levelMax - levelMin)
+            if (levelMax > levelMin)
+            else float("nan")
+        )
+        pxPerLevelMedian = pixelsTotal / uniqueCount if uniqueCount else float("nan")
         # median
-        halfPx = pixelsTotal/2
-        running=0
+        halfPx = pixelsTotal / 2
+        running = 0
         medianVal = None
-        for idx in sortedIdx:
-            if idx<levelMin or idx>levelMax:
-                continue
-            running += d[idx]
+        for i in range(levelMin, levelMax + 1):
+            running += d[i]
             if medianVal is None and running >= halfPx:
-                medianVal = idx
+                medianVal = i
                 break
 
         # std dev
         sumOfDev = 0
         seenPixels = 0
         for idx in sortedIdx:
-            if idx<levelMin or idx>levelMax:
+            if idx < levelMin or idx > levelMax:
                 continue
             countPx = d[idx]
-            sumOfDev += (idx-meanValue)*(idx-meanValue)*countPx
+            sumOfDev += (idx - meanValue) * (idx - meanValue) * countPx
             seenPixels += countPx
 
-        stdDev = math.sqrt(sumOfDev/seenPixels) if seenPixels else float('nan')
+        stdDev = math.sqrt(sumOfDev / seenPixels) if seenPixels else float("nan")
 
         result = {
-            'levels': {
-                'mean': meanValue,
-                'median': medianVal if medianVal is not None else float('nan'),
-                'stdDev': stdDev,
-                'unique': uniqueCount
+            "levels": {
+                "mean": meanValue,
+                "median": medianVal if medianVal is not None else float("nan"),
+                "stdDev": stdDev,
+                "unique": uniqueCount,
             },
-            'pixelsPerLevel': {
-                'mean': pxPerLevelMean,
-                'median': pxPerLevelMedian,
-                'peak': mostPixels
+            "pixelsPerLevel": {
+                "mean": pxPerLevelMean,
+                "median": pxPerLevelMedian,
+                "peak": mostPixels,
             },
-            'pixels': pixelsTotal
+            "pixels": pixelsTotal,
         }
         self._cachedStats[cacheKey] = result
         return result
@@ -213,37 +226,37 @@ class Histogram:
     def _thresholdingBuildLookupTable(self):
         # Builds H matrix from P and S, as in the JS code
         n = COLOR_DEPTH
-        P = [0.0]*(n*n)
-        S = [0.0]*(n*n)
-        H = [0.0]*(n*n)
+        P = [0.0] * (n * n)
+        S = [0.0] * (n * n)
+        H = [0.0] * (n * n)
         pixTotal = self.pixels
 
         # diag
         for i in range(1, n):
             idx = index_xy(i, i)
-            tmp = self.data[i]/pixTotal
+            tmp = self.data[i] / pixTotal
             P[idx] = tmp
-            S[idx] = i*tmp
+            S[idx] = i * tmp
 
         # first row?
-        for i in range(1, n-1):
-            tmp = self.data[i+1]/pixTotal
+        for i in range(1, n - 1):
+            tmp = self.data[i + 1] / pixTotal
             idx = index_xy(1, i)
-            P[idx+1] = P[idx] + tmp
-            S[idx+1] = S[idx] + (i+1)*tmp
+            P[idx + 1] = P[idx] + tmp
+            S[idx + 1] = S[idx] + (i + 1) * tmp
 
         # reusing row 1 to fill others
         for i in range(2, n):
-            for j in range(i+1, n):
-                P[index_xy(i,j)] = P[index_xy(1,j)] - P[index_xy(1,i-1)]
-                S[index_xy(i,j)] = S[index_xy(1,j)] - S[index_xy(1,i-1)]
+            for j in range(i + 1, n):
+                P[index_xy(i, j)] = P[index_xy(1, j)] - P[index_xy(1, i - 1)]
+                S[index_xy(i, j)] = S[index_xy(1, j)] - S[index_xy(1, i - 1)]
 
         # now compute H[i][j]
-        for i in range(1,n):
-            for j in range(i+1,n):
-                idx = index_xy(i,j)
-                if abs(P[idx])>1e-12:
-                    H[idx] = (S[idx]*S[idx]) / P[idx]
+        for i in range(1, n):
+            for j in range(i + 1, n):
+                idx = index_xy(i, j)
+                if abs(P[idx]) > 1e-12:
+                    H[idx] = (S[idx] * S[idx]) / P[idx]
                 else:
                     H[idx] = 0
         self._lookupTableH = H

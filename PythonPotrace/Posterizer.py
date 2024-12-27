@@ -1,9 +1,12 @@
-# Posterizer.py
+# PythonPotrace/Posterizer.py
 
 import math
+
 from .Potrace import Potrace
-from .utils import clamp, between, luminance, set_html_attribute as setHtmlAttr
 from .types.Histogram import Histogram
+from .utils import between, clamp, luminance
+from .utils import set_html_attribute as setHtmlAttr
+
 
 class Posterizer:
     """
@@ -12,23 +15,23 @@ class Posterizer:
     """
 
     STEPS_AUTO = -1
-    FILL_SPREAD = 'spread'
-    FILL_DOMINANT = 'dominant'
-    FILL_MEDIAN = 'median'
-    FILL_MEAN = 'mean'
-    RANGES_AUTO = 'auto'
-    RANGES_EQUAL = 'equal'
+    FILL_SPREAD = "spread"
+    FILL_DOMINANT = "dominant"
+    FILL_MEDIAN = "median"
+    FILL_MEAN = "mean"
+    RANGES_AUTO = "auto"
+    RANGES_EQUAL = "equal"
 
     def __init__(self, options=None):
         self._potrace = Potrace()
         self._calculatedThreshold = None
         self._params = {
-            'threshold': Potrace.THRESHOLD_AUTO,
-            'blackOnWhite': True,
-            'steps': Posterizer.STEPS_AUTO,
-            'background': Potrace.COLOR_TRANSPARENT,
-            'fillStrategy': Posterizer.FILL_DOMINANT,
-            'rangeDistribution': Posterizer.RANGES_AUTO
+            "threshold": Potrace.THRESHOLD_AUTO,
+            "blackOnWhite": True,
+            "steps": Posterizer.STEPS_AUTO,
+            "background": Potrace.COLOR_TRANSPARENT,
+            "fillStrategy": Posterizer.FILL_DOMINANT,
+            "rangeDistribution": Posterizer.RANGES_AUTO,
         }
 
         if options:
@@ -38,19 +41,24 @@ class Posterizer:
         return self._potrace._luminanceData.histogram()
 
     def _paramSteps(self, count=False):
-        steps = self._params['steps']
+        steps = self._params["steps"]
 
         # If steps is an array, return as-is or its length
         if isinstance(steps, list):
             return len(steps) if count else steps
 
         # If steps is STEPS_AUTO and threshold is also auto, default to 4 (some logic)
-        if steps == Posterizer.STEPS_AUTO and self._params['threshold'] == Potrace.THRESHOLD_AUTO:
+        if (
+            steps == Posterizer.STEPS_AUTO
+            and self._params["threshold"] == Potrace.THRESHOLD_AUTO
+        ):
             return 4
 
         # If steps is STEPS_AUTO but threshold is not auto
-        blackOnWhite = self._params['blackOnWhite']
-        colorsCount = self._paramThreshold() if blackOnWhite else 255 - self._paramThreshold()
+        blackOnWhite = self._params["blackOnWhite"]
+        colorsCount = (
+            self._paramThreshold() if blackOnWhite else 255 - self._paramThreshold()
+        )
 
         if steps == Posterizer.STEPS_AUTO:
             return 4 if colorsCount > 200 else 3
@@ -63,14 +71,16 @@ class Posterizer:
             return self._calculatedThreshold
 
         # If threshold is not auto, just return it
-        if self._params['threshold'] != Potrace.THRESHOLD_AUTO:
-            self._calculatedThreshold = self._params['threshold']
+        if self._params["threshold"] != Potrace.THRESHOLD_AUTO:
+            self._calculatedThreshold = self._params["threshold"]
             return self._calculatedThreshold
 
         # If threshold is auto, we do a 2-level thresholding to find a suitable threshold
         twoThresholds = self._getImageHistogram().multilevelThresholding(2)
-        if self._params['blackOnWhite']:
-            self._calculatedThreshold = twoThresholds[1] if len(twoThresholds) > 1 else 128
+        if self._params["blackOnWhite"]:
+            self._calculatedThreshold = (
+                twoThresholds[1] if len(twoThresholds) > 1 else 128
+            )
         else:
             self._calculatedThreshold = twoThresholds[0] if len(twoThresholds) else 128
 
@@ -81,9 +91,13 @@ class Posterizer:
         For each threshold in colorStops, pick a representative color intensity
         based on fillStrategy.
         """
-        blackOnWhite = self._params['blackOnWhite']
-        colorSelectionStrat = self._params['fillStrategy']
-        histogram = None if colorSelectionStrat == self.FILL_SPREAD else self._getImageHistogram()
+        blackOnWhite = self._params["blackOnWhite"]
+        colorSelectionStrat = self._params["fillStrategy"]
+        histogram = (
+            None
+            if colorSelectionStrat == self.FILL_SPREAD
+            else self._getImageHistogram()
+        )
         fullRange = abs(self._paramThreshold() - (0 if blackOnWhite else 255))
 
         results = []
@@ -102,44 +116,49 @@ class Posterizer:
             if colorSelectionStrat == self.FILL_SPREAD:
                 # Spread color across range
                 # We want 0 or 255 at the most saturated end, scaled by factor
-                color = (
-                    (rangeStart if blackOnWhite else rangeEnd)
-                    + (1 if blackOnWhite else -1) * intervalSize * max(0.5, fullRange / 255) * factor
-                )
+                color = (rangeStart if blackOnWhite else rangeEnd) + (
+                    1 if blackOnWhite else -1
+                ) * intervalSize * max(0.5, fullRange / 255) * factor
                 color = round(color)
                 pixelCount = 1  # not used for this strategy
             else:
                 stats = histogram.getStats(rangeStart, rangeEnd)
-                pixelCount = stats['pixels']
+                pixelCount = stats["pixels"]
                 if pixelCount == 0:
-                    results.append({'value': threshold, 'colorIntensity': 0})
+                    results.append({"value": threshold, "colorIntensity": 0})
                     continue
 
                 if colorSelectionStrat == self.FILL_DOMINANT:
-                    dom = histogram.getDominantColor(rangeStart, rangeEnd, clamp(intervalSize, 1, 5))
+                    dom = histogram.getDominantColor(
+                        rangeStart, rangeEnd, clamp(intervalSize, 1, 5)
+                    )
                     color = dom if dom >= 0 else -1
                 elif colorSelectionStrat == self.FILL_MEAN:
-                    color = stats['levels']['mean']
+                    color = stats["levels"]["mean"]
                 elif colorSelectionStrat == self.FILL_MEDIAN:
-                    color = stats['levels']['median']
+                    color = stats["levels"]["median"]
                 else:
                     color = -1
 
             if color == -1:
-                results.append({'value': threshold, 'colorIntensity': 0})
+                results.append({"value": threshold, "colorIntensity": 0})
                 continue
 
             # We don’t want colors to be too close to each other, so we add spacing
             if i != 0 and intervalSize > 0:
                 if blackOnWhite:
                     # Don’t let color go beyond interval end minus 10%
-                    color = clamp(color, rangeStart, rangeEnd - round(intervalSize * 0.1))
+                    color = clamp(
+                        color, rangeStart, rangeEnd - round(intervalSize * 0.1)
+                    )
                 else:
-                    color = clamp(color, rangeStart + round(intervalSize * 0.1), rangeEnd)
+                    color = clamp(
+                        color, rangeStart + round(intervalSize * 0.1), rangeEnd
+                    )
 
             # Convert to [0..1] intensity
             colorIntensity = (255 - color if blackOnWhite else color) / 255
-            results.append({'value': threshold, 'colorIntensity': colorIntensity})
+            results.append({"value": threshold, "colorIntensity": colorIntensity})
 
         return results
 
@@ -152,11 +171,11 @@ class Posterizer:
         colorStops = []
 
         # If threshold is auto, we can do a plain multilevelThresholding
-        if self._params['threshold'] == Potrace.THRESHOLD_AUTO:
+        if self._params["threshold"] == Potrace.THRESHOLD_AUTO:
             colorStops = histogram.multilevelThresholding(steps)
         else:
             threshold = self._paramThreshold()
-            if self._params['blackOnWhite']:
+            if self._params["blackOnWhite"]:
                 # Then we do one fewer threshold below our main threshold
                 colorStops = histogram.multilevelThresholding(steps - 1, 0, threshold)
                 colorStops.append(threshold)
@@ -165,7 +184,7 @@ class Posterizer:
                 colorStops = histogram.multilevelThresholding(steps - 1, threshold, 255)
                 colorStops.insert(0, threshold)
 
-        if self._params['blackOnWhite']:
+        if self._params["blackOnWhite"]:
             colorStops.reverse()
 
         return self._calcColorIntensity(colorStops)
@@ -174,7 +193,7 @@ class Posterizer:
         """
         If user wants color steps at equal intervals from threshold to black or white.
         """
-        blackOnWhite = self._params['blackOnWhite']
+        blackOnWhite = self._params["blackOnWhite"]
         threshold = self._paramThreshold()
         colorsToThreshold = threshold if blackOnWhite else (255 - threshold)
         steps = self._paramSteps()
@@ -195,16 +214,17 @@ class Posterizer:
         """
         Prepares array of color stops (thresholds) for the final layered tracing.
         """
-        steps = self._params['steps']
+        steps = self._params["steps"]
 
         # If steps is a user-provided array
         if isinstance(steps, list):
-            blackOnWhite = self._params['blackOnWhite']
+            blackOnWhite = self._params["blackOnWhite"]
             threshold = self._paramThreshold()
 
             # Deduplicate & keep in 0..255
-            arrayStops = sorted(set([s for s in steps if 0 <= s <= 255]),
-                                reverse=blackOnWhite)
+            arrayStops = sorted(
+                set([s for s in steps if 0 <= s <= 255]), reverse=blackOnWhite
+            )
 
             if blackOnWhite and (not arrayStops or arrayStops[0] < threshold):
                 arrayStops.insert(0, threshold)
@@ -217,7 +237,7 @@ class Posterizer:
             return self._calcColorIntensity(arrayStops)
 
         # If steps is not array, we rely on auto or equally distributed
-        if self._params['rangeDistribution'] == self.RANGES_AUTO:
+        if self._params["rangeDistribution"] == self.RANGES_AUTO:
             return self._getRangesAuto()
         else:
             return self._getRangesEquallyDistributed()
@@ -228,20 +248,23 @@ class Posterizer:
         for shadows. This is to improve presence of darkest pixels when blackOnWhite=True
         or brightest when blackOnWhite=False.
         """
-        blackOnWhite = self._params['blackOnWhite']
+        blackOnWhite = self._params["blackOnWhite"]
         if not ranges:
             return ranges
 
         lastColorStop = ranges[-1]
-        lastValue = lastColorStop['value']
+        lastValue = lastColorStop["value"]
         lastRangeFrom = 0 if blackOnWhite else lastValue
         lastRangeTo = lastValue if blackOnWhite else 255
 
-        if abs(lastRangeTo - lastRangeFrom) > 25 and lastColorStop['colorIntensity'] != 1:
+        if (
+            abs(lastRangeTo - lastRangeFrom) > 25
+            and lastColorStop["colorIntensity"] != 1
+        ):
             histogram = self._getImageHistogram()
             stats = histogram.getStats(lastRangeFrom, lastRangeTo)
-            mean = stats['levels']['mean']
-            std = stats['levels']['stdDev']
+            mean = stats["levels"]["mean"]
+            std = stats["levels"]["stdDev"]
 
             # Attempt a new color stop that’s near (mean +/- std)
             candidate = 25
@@ -254,16 +277,20 @@ class Posterizer:
             if blackOnWhite:
                 # stats for 0..candidate
                 newStats = histogram.getStats(0, candidate)
-                color = newStats['levels']['mean']
+                color = newStats["levels"]["mean"]
                 newIntensity = (255 - color) / 255 if not math.isnan(color) else 0
-                ranges.append({'value': abs((0 if blackOnWhite else 255) - candidate),
-                               'colorIntensity': newIntensity})
+                ranges.append(
+                    {
+                        "value": abs((0 if blackOnWhite else 255) - candidate),
+                        "colorIntensity": newIntensity,
+                    }
+                )
             else:
                 # stats for candidate..255
                 newStats = histogram.getStats(candidate, 255)
-                color = newStats['levels']['mean']
+                color = newStats["levels"]["mean"]
                 newIntensity = (color / 255) if not math.isnan(color) else 0
-                ranges.append({'value': candidate, 'colorIntensity': newIntensity})
+                ranges.append({"value": candidate, "colorIntensity": newIntensity})
 
         return ranges
 
@@ -272,45 +299,51 @@ class Posterizer:
         Traces image multiple times for each threshold in our color stops and returns an array of <path> tags.
         """
         ranges = self._getRanges()
-        blackOnWhite = self._params['blackOnWhite']
+        blackOnWhite = self._params["blackOnWhite"]
 
         if len(ranges) >= 10:
             ranges = self._addExtraColorStop(ranges)
 
-        self._potrace.setParameters({'blackOnWhite': blackOnWhite})
+        self._potrace.setParameters({"blackOnWhite": blackOnWhite})
         actualPrevLayersOpacity = 0
 
         result = []
         for colorStop in ranges:
-            thisLayerOpacity = colorStop['colorIntensity']
+            thisLayerOpacity = colorStop["colorIntensity"]
             if thisLayerOpacity == 0:
-                result.append('')
+                result.append("")
                 continue
 
             # Some hack to approximate layering with partial alpha
             if not actualPrevLayersOpacity or thisLayerOpacity == 1:
                 calculatedOpacity = thisLayerOpacity
             else:
-                calculatedOpacity = (actualPrevLayersOpacity - thisLayerOpacity) / (actualPrevLayersOpacity - 1.0)
+                calculatedOpacity = (actualPrevLayersOpacity - thisLayerOpacity) / (
+                    actualPrevLayersOpacity - 1.0
+                )
                 calculatedOpacity = round(clamp(calculatedOpacity, 0, 1), 3)
 
-            actualPrevLayersOpacity = actualPrevLayersOpacity + (1 - actualPrevLayersOpacity) * calculatedOpacity
+            actualPrevLayersOpacity = (
+                actualPrevLayersOpacity
+                + (1 - actualPrevLayersOpacity) * calculatedOpacity
+            )
 
             # Now do the trace for that threshold
-            self._potrace.setParameters({'threshold': colorStop['value']})
-            element = self._potrace.getPathTag('' if noFillColor else None)
+            self._potrace.setParameters({"threshold": colorStop["value"]})
+            element = self._potrace.getPathTag("" if noFillColor else None)
             # Insert fill-opacity
-            element = setHtmlAttr(element, 'fill-opacity', f"{calculatedOpacity:.3f}")
+            element = setHtmlAttr(element, "fill-opacity", f"{calculatedOpacity:.3f}")
 
             canBeIgnored = (calculatedOpacity == 0) or (' d=""' in element)
-            result.append('' if canBeIgnored else element)
+            result.append("" if canBeIgnored else element)
 
         return result
 
-    def loadImage(self, target, callback):
+    def loadImage(self, target, callback=lambda err: None):
         """
         Loads image. `target` can be a path, PIL Image, or something the underlying Potrace loadImage can handle.
         """
+
         def after_load(err):
             self._calculatedThreshold = None
             callback(err)
@@ -326,13 +359,17 @@ class Posterizer:
 
         self._potrace.setParameters(params)
 
-        if 'steps' in params:
-            steps = params['steps']
+        if "steps" in params:
+            steps = params["steps"]
             if isinstance(steps, list):
                 for s in steps:
                     if not isinstance(s, int) or s < 0 or s > 255:
-                        raise ValueError("Elements of 'steps' must be integers in [0..255]")
-            elif isinstance(steps, int) and (steps < 1 or steps > 255):
+                        raise ValueError(
+                            "Elements of 'steps' must be integers in [0..255]"
+                        )
+            elif isinstance(steps, int) and (
+                steps < 1 and steps != Posterizer.STEPS_AUTO
+            ):
                 raise ValueError("'steps' must be in [1..255], or -1 for STEPS_AUTO.")
             # If no exception, we can store it
 
@@ -350,16 +387,18 @@ class Posterizer:
         width = self._potrace._luminanceData.width
         height = self._potrace._luminanceData.height
         paths = self._pathTags(noFillColor=True)
-        joined = ''.join(paths)
-        return f'<symbol viewBox="0 0 {width} {height}" id="{id_value}">{joined}</symbol>'
+        joined = "".join(paths)
+        return (
+            f'<symbol viewBox="0 0 {width} {height}" id="{id_value}">{joined}</symbol>'
+        )
 
     def getSVG(self):
         width = self._potrace._luminanceData.width
         height = self._potrace._luminanceData.height
 
         tags = self._pathTags(noFillColor=False)
-        background = self._params['background']
-        rectTag = ''
+        background = self._params["background"]
+        rectTag = ""
         if background != Potrace.COLOR_TRANSPARENT:
             rectTag = f'<rect x="0" y="0" width="100%" height="100%" fill="{background}" />\n\t'
 
@@ -367,10 +406,8 @@ class Posterizer:
             f'<svg xmlns="http://www.w3.org/2000/svg" '
             f'width="{width}" height="{height}" '
             f'viewBox="0 0 {width} {height}" version="1.1">\n\t'
-            f'{rectTag}'
-            + '\n\t'.join(tags)
-            + '\n</svg>'
+            f"{rectTag}" + "\n\t".join(tags) + "\n</svg>"
         )
 
         # Remove extra blank lines introduced by \n\t
-        return svg.replace(r'\n\t\n', '\n').replace(r'\n\t\t', '\n\t')
+        return svg.replace(r"\n\t\n", "\n").replace(r"\n\t\t", "\n\t")

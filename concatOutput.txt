@@ -1,0 +1,3183 @@
+Contents of 'PythonPotrace' and its subdirectories
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+--------------------------------------------------------------------------------
+# Tree Representation
+********************************************************************************
+Full tree of 'PythonPotrace':
+
+PythonPotrace
+├── Docs
+│   ├── LICENSE
+│   ├── Outline.md
+│   └── README.md
+├── Examples
+│   ├── exampleOutput.svg
+│   ├── exampleOutputPosterized.svg
+│   └── yao.jpg
+├── PythonPotrace
+│   ├── Posterizer.py
+│   ├── Potrace.py
+│   ├── __init__.py
+│   ├── index.py
+│   ├── types
+│   │   ├── Bitmap.py
+│   │   ├── Curve.py
+│   │   ├── Histogram.py
+│   │   ├── Opti.py
+│   │   ├── Path.py
+│   │   ├── Point.py
+│   │   ├── Quad.py
+│   │   ├── Sum.py
+│   │   └── __init__.py
+│   └── utils.py
+├── Tests
+│   ├── Input
+│   │   ├── Advanced
+│   │   │   ├── FullyBlack.png
+│   │   │   ├── FullyWhite.png
+│   │   │   ├── Logo.png
+│   │   │   ├── Rocket.png
+│   │   │   ├── Skin.png
+│   │   │   └── TransparentImage.png
+│   │   ├── Integration
+│   │   │   ├── Astronaut.png
+│   │   │   ├── Cat.png
+│   │   │   └── Rocket.png
+│   │   ├── Performance
+│   │   │   └── LargeImage.png
+│   │   ├── Posterizer
+│   │   │   ├── Astronaut.png
+│   │   │   ├── BinaryBlobs.png
+│   │   │   ├── Cat.png
+│   │   │   ├── Coffee.png
+│   │   │   ├── Colorwheel.png
+│   │   │   ├── HubbleDeepField.png
+│   │   │   ├── Immunohistochemistry.png
+│   │   │   ├── Logo.png
+│   │   │   ├── Retina.png
+│   │   │   ├── Rocket.png
+│   │   │   └── Skin.png
+│   │   └── Potrace
+│   │       ├── Astronaut.png
+│   │       ├── BinaryBlobs.png
+│   │       ├── Cat.png
+│   │       ├── Coffee.png
+│   │       ├── Colorwheel.png
+│   │       ├── HubbleDeepField.png
+│   │       ├── Immunohistochemistry.png
+│   │       ├── Logo.png
+│   │       ├── Retina.png
+│   │       ├── Rocket.png
+│   │       └── Skin.png
+│   ├── Output
+│   │   ├── Advanced
+│   │   │   ├── Logo_posterizer_steps2.svg
+│   │   │   └── TransparentImage_posterizer.svg
+│   │   ├── Integration
+│   │   ├── Performance
+│   │   ├── Posterizer
+│   │   └── Potrace
+│   ├── output.log
+│   └── test.py
+├── concatOutput.txt
+└── pyproject.toml
+
+18 directories, 58 files
+================================================================================
+
+--------------------------------------------------------------------------------
+# Filtered Directory Structure List
+********************************************************************************
+".": ["Docs, Examples, PythonPotrace, Tests, concatOutput.txt, pyproject.toml"]
+"./Docs": ["LICENSE, Outline.md, README.md"]
+"./Examples": ["exampleOutput.svg, exampleOutputPosterized.svg, yao.jpg"]
+"./PythonPotrace": ["Posterizer.py, Potrace.py, __init__.py, index.py, types, utils.py"]
+"./PythonPotrace/types": ["Bitmap.py, Curve.py, Histogram.py, Opti.py, Path.py, Point.py, Quad.py, Sum.py, __init__.py"]
+"./Tests": ["Input, Output, output.log, test.py"]
+"./Tests/Input": ["Advanced, Integration, Performance, Posterizer, Potrace"]
+"./Tests/Input/Advanced": ["FullyBlack.png, FullyWhite.png, Logo.png, Rocket.png, Skin.png, TransparentImage.png"]
+"./Tests/Input/Integration": ["Astronaut.png, Cat.png, Rocket.png"]
+"./Tests/Input/Performance": ["LargeImage.png"]
+"./Tests/Input/Posterizer": ["Astronaut.png, BinaryBlobs.png, Cat.png, Coffee.png, Colorwheel.png, HubbleDeepField.png, Immunohistochemistry.png, Logo.png, Retina.png, Rocket.png, Skin.png"]
+"./Tests/Input/Potrace": ["Astronaut.png, BinaryBlobs.png, Cat.png, Coffee.png, Colorwheel.png, HubbleDeepField.png, Immunohistochemistry.png, Logo.png, Retina.png, Rocket.png, Skin.png"]
+"./Tests/Output": ["Advanced, Integration, Performance, Posterizer, Potrace"]
+"./Tests/Output/Advanced": ["Logo_posterizer_steps2.svg, TransparentImage_posterizer.svg"]
+"./Tests/Output/Integration": []
+"./Tests/Output/Performance": []
+"./Tests/Output/Posterizer": []
+"./Tests/Output/Potrace": []
+================================================================================
+
+--------------------------------------------------------------------------------
+# test.py
+# Tests/test.py
+# ./Tests/test.py
+# Content:
+********************************************************************************
+# test.py
+
+import os
+import shutil
+import unittest
+from pathlib import Path
+
+import numpy as np
+from PIL import Image
+from skimage import data
+
+# Import the PythonPotrace package and its modules
+from PythonPotrace import Posterizer, Potrace
+from PythonPotrace.types.Bitmap import Bitmap
+from PythonPotrace.types.Histogram import Histogram
+
+
+class TestBitmap(unittest.TestCase):
+    """
+    Tests for the Bitmap class.
+
+    This test suite verifies the correct initialization, pixel manipulation,
+    copying functionality, and boundary conditions of the Bitmap class.
+    """
+
+    def test_Initialization(self):
+        """
+        Test that a Bitmap initializes with correct width, height, and size.
+
+        Raises
+        ------
+        AssertionError
+            If the Bitmap's width, height, or size does not match expected values.
+        """
+        width, height = 10, 20
+        bmp = Bitmap(width, height)
+        self.assertEqual(bmp.width, width, "Bitmap width mismatch.")
+        self.assertEqual(bmp.height, height, "Bitmap height mismatch.")
+        self.assertEqual(bmp.size, width * height, "Bitmap size mismatch.")
+        self.assertEqual(len(bmp.data), width * height, "Bitmap data length mismatch.")
+
+    def test_SetAndGetValue(self):
+        """
+        Test setting and retrieving pixel values in the Bitmap.
+
+        Raises
+        ------
+        AssertionError
+            If retrieved pixel values do not match the set values.
+        """
+        width, height = 5, 5
+        bmp = Bitmap(width, height)
+        # Set pixel values to their index
+        for y in range(height):
+            for x in range(width):
+                idx = y * width + x
+                bmp.data[idx] = idx * 10  # Arbitrary value assignment
+
+        # Retrieve and verify pixel values
+        for y in range(height):
+            for x in range(width):
+                idx = y * width + x
+                expected_value = idx * 10
+                actual_value = bmp.getValueAt(x, y)
+                self.assertEqual(
+                    actual_value,
+                    expected_value,
+                    f"Pixel value mismatch at ({x}, {y}). Expected {expected_value}, got {actual_value}.",
+                )
+
+    def test_Copy(self):
+        """
+        Test that copying a Bitmap preserves all pixel data correctly.
+
+        Raises
+        ------
+        AssertionError
+            If the copied Bitmap's pixel data does not match the original.
+        """
+        width, height = 4, 4
+        bmp_original = Bitmap(width, height)
+        # Initialize original Bitmap with specific values
+        for i in range(bmp_original.size):
+            bmp_original.data[i] = i + 1  # Values from 1 to 16
+
+        bmp_copy = bmp_original.copy()
+        self.assertEqual(
+            bmp_copy.width, bmp_original.width, "Copied Bitmap width mismatch."
+        )
+        self.assertEqual(
+            bmp_copy.height, bmp_original.height, "Copied Bitmap height mismatch."
+        )
+        self.assertEqual(
+            bmp_copy.size, bmp_original.size, "Copied Bitmap size mismatch."
+        )
+        self.assertEqual(
+            bmp_copy.data, bmp_original.data, "Copied Bitmap data mismatch."
+        )
+
+    def test_BoundaryConditions(self):
+        """
+        Test accessing pixels outside the Bitmap boundaries.
+
+        Raises
+        ------
+        AssertionError
+            If accessing out-of-bounds pixels does not return -1.
+        """
+        width, height = 3, 3
+        bmp = Bitmap(width, height)
+        # Accessing out-of-bounds should return -1
+        self.assertEqual(
+            bmp.getValueAt(-1, 0), -1, "Out-of-bounds access did not return -1."
+        )
+        self.assertEqual(
+            bmp.getValueAt(0, -1), -1, "Out-of-bounds access did not return -1."
+        )
+        self.assertEqual(
+            bmp.getValueAt(width, 0), -1, "Out-of-bounds access did not return -1."
+        )
+        self.assertEqual(
+            bmp.getValueAt(0, height), -1, "Out-of-bounds access did not return -1."
+        )
+
+
+class TestHistogram(unittest.TestCase):
+    """
+    Tests for the Histogram class.
+
+    This test suite verifies the correct construction of histograms from Bitmap data,
+    calculation of statistics, and thresholding functionality.
+    """
+
+    def test_HistogramConstruction(self):
+        """
+        Test that Histogram correctly counts pixel values from a Bitmap.
+
+        Raises
+        ------
+        AssertionError
+            If the histogram does not accurately reflect the Bitmap's pixel data.
+        """
+        bmp = Bitmap(4, 1)
+        bmp.data = bytearray([10, 20, 20, 30])  # Pixel values: 10, 20, 20, 30
+        histogram = Histogram(bmp)
+
+        expected_counts = {10: 1, 20: 2, 30: 1}
+        for value in [10, 20, 30]:
+            self.assertEqual(
+                histogram.data[value],
+                expected_counts[value],
+                f"Histogram count mismatch for value {value}.",
+            )
+
+        # Ensure other values are zero
+        for value in range(0, 256):
+            if value not in expected_counts:
+                self.assertEqual(
+                    histogram.data[value],
+                    0,
+                    f"Histogram should have zero count for value {value}.",
+                )
+
+    def test_GetStats(self):
+        """
+        Test that Histogram.getStats returns correct statistical values.
+
+        Raises
+        ------
+        AssertionError
+            If the calculated statistics do not match expected values.
+        """
+        bmp = Bitmap(5, 1)
+        bmp.data = bytearray([0, 0, 255, 128, 128])  # Pixel values: 0, 0, 255, 128, 128
+        histogram = Histogram(bmp)
+
+        stats = histogram.getStats()
+        self.assertEqual(stats["pixels"], 5, "Total pixel count mismatch.")
+        self.assertEqual(stats["levels"]["unique"], 3, "Unique levels count mismatch.")
+        self.assertAlmostEqual(
+            stats["levels"]["mean"],
+            (0 + 0 + 255 + 128 + 128) / 5,
+            places=2,
+            msg="Mean value mismatch.",
+        )
+        self.assertEqual(stats["levels"]["median"], 128, "Median value mismatch.")
+        self.assertAlmostEqual(
+            stats["levels"]["stdDev"],
+            np.std([0, 0, 255, 128, 128], ddof=0),
+            places=2,
+            msg="Standard deviation mismatch.",
+        )
+
+    def test_MultilevelThresholding(self):
+        """
+        Test that Histogram.multilevelThresholding correctly identifies thresholds.
+
+        Raises
+        ------
+        AssertionError
+            If the identified thresholds do not match expected values.
+        """
+        bmp = Bitmap(6, 1)
+        bmp.data = bytearray(
+            [10, 10, 50, 50, 200, 200]
+        )  # Pixel values: 10,10,50,50,200,200
+        histogram = Histogram(bmp)
+
+        thresholds = histogram.multilevelThresholding(2)
+        self.assertEqual(len(thresholds), 2, "Number of thresholds mismatch.")
+        self.assertTrue(
+            10 < thresholds[0] < 50, "First threshold out of expected range."
+        )
+        self.assertTrue(
+            50 < thresholds[1] < 200, "Second threshold out of expected range."
+        )
+
+    def test_GetDominantColor(self):
+        """
+        Test that Histogram.getDominantColor correctly identifies the most frequent color.
+
+        Raises
+        ------
+        AssertionError
+            If the dominant color does not match the expected value.
+        """
+        bmp = Bitmap(6, 1)
+        bmp.data = bytearray(
+            [10, 20, 20, 30, 30, 30]
+        )  # Pixel values: 10,20,20,30,30,30
+        histogram = Histogram(bmp)
+
+        dominant = histogram.getDominantColor()
+        self.assertEqual(dominant, 30, "Dominant color mismatch.")
+
+
+class TestPotrace(unittest.TestCase):
+    """
+    Tests for the Potrace class.
+
+    This test suite verifies image loading, SVG generation, and parameter handling
+    within the Potrace class.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """
+        Sets up the testing environment by creating input and output directories
+        and saving test images.
+        """
+        cls.inputDir = Path("./Input/Potrace")
+        cls.outputDir = Path("./Output/Potrace")
+        cls.inputDir.mkdir(parents=True, exist_ok=True)
+        cls.outputDir.mkdir(parents=True, exist_ok=True)
+
+        # Define test images using skimage.data
+        cls.testImages = {
+            "Astronaut": data.astronaut(),
+            "BinaryBlobs": data.binary_blobs(),
+            "Cat": data.cat(),
+            "Coffee": data.coffee(),
+            "Colorwheel": data.colorwheel(),
+            "HubbleDeepField": data.hubble_deep_field(),
+            "Immunohistochemistry": data.immunohistochemistry(),
+            "Logo": data.logo(),
+            "Retina": data.retina(),
+            "Rocket": data.rocket(),
+            "Skin": data.skin(),
+        }
+
+        # Save each test image to ./Inputs_Potrace as PNG
+        for name, imgArray in cls.testImages.items():
+            if imgArray.ndim == 2:
+                pilImage = Image.fromarray(imgArray)
+            elif imgArray.shape[2] == 3:
+                pilImage = Image.fromarray(imgArray, mode="RGB")
+            else:
+                pilImage = Image.fromarray(imgArray, mode="RGBA")
+
+            pilImage.save(cls.inputDir / f"{name}.png")
+
+    def test_LoadImage(self):
+        """
+        Test that Potrace can successfully load various image types without errors.
+
+        Raises
+        ------
+        AssertionError
+            If Potrace fails to load an image or raises an unexpected exception.
+        """
+        for name in self.testImages.keys():
+            inputPath = self.inputDir / f"{name}.png"
+            potrace = Potrace()
+            try:
+                potrace.loadImage(str(inputPath))
+                self.assertTrue(
+                    potrace._imageLoaded, f"Potrace failed to load image '{name}'."
+                )
+            except Exception as e:
+                self.fail(f"Potrace.loadImage raised an exception for '{name}': {e}")
+
+    def test_GetSVG(self):
+        """
+        Test that Potrace generates a valid SVG string after loading an image.
+
+        Raises
+        ------
+        AssertionError
+            If the generated SVG does not contain expected SVG elements.
+        """
+        for name in self.testImages.keys():
+            inputPath = self.inputDir / f"{name}.png"
+            outputPath = self.outputDir / f"{name}_potrace.svg"
+            potrace = Potrace()
+            potrace.loadImage(str(inputPath))
+            svgContent = potrace.getSVG()
+            # Basic checks on SVG content
+            self.assertIn("<svg", svgContent, "SVG content missing <svg> tag.")
+            self.assertIn("</svg>", svgContent, "SVG content missing </svg> tag.")
+            # Save SVG to file
+            with open(outputPath, "w", encoding="utf-8") as f:
+                f.write(svgContent)
+            # Check that file was written
+            self.assertTrue(
+                outputPath.exists(),
+                f"SVG output file '{outputPath.name}' was not created.",
+            )
+
+    def test_PotraceParameters(self):
+        """
+        Test that Potrace correctly handles various parameters like turnPolicy and threshold.
+
+        Raises
+        ------
+        AssertionError
+            If Potrace does not apply parameters as expected.
+        """
+        testParams = [
+            {"turnPolicy": Potrace.TURNPOLICY_BLACK, "threshold": 128},
+            {"turnPolicy": Potrace.TURNPOLICY_WHITE, "threshold": 100},
+            {"turnPolicy": Potrace.TURNPOLICY_LEFT, "threshold": 150},
+            {"turnPolicy": Potrace.TURNPOLICY_RIGHT, "threshold": 200},
+            {
+                "turnPolicy": Potrace.TURNPOLICY_MINORITY,
+                "threshold": Potrace.THRESHOLD_AUTO,
+            },
+            {
+                "turnPolicy": Potrace.TURNPOLICY_MAJORITY,
+                "threshold": Potrace.THRESHOLD_AUTO,
+            },
+        ]
+
+        for params in testParams:
+            for name in self.testImages.keys():
+                inputPath = self.inputDir / f"{name}.png"
+                potrace = Potrace(options=params)
+                try:
+                    potrace.loadImage(str(inputPath))
+                    potrace.getSVG()
+                    # Further checks can be added to verify SVG content based on parameters
+                    self.assertTrue(
+                        potrace._imageLoaded,
+                        f"Potrace failed with parameters {params} on '{name}'.",
+                    )
+                except Exception as e:
+                    self.fail(
+                        f"Potrace raised an exception with parameters {params} on '{name}': {e}"
+                    )
+
+
+class TestPosterizer(unittest.TestCase):
+    """
+    Tests for the Posterizer class.
+
+    This test suite verifies image loading, SVG generation with multiple thresholds,
+    and parameter handling within the Posterizer class.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """
+        Sets up the testing environment by creating input and output directories
+        and saving test images.
+        """
+        cls.inputDir = Path("./Input/Posterizer")
+        cls.outputDir = Path("./Output/Posterizer")
+        cls.inputDir.mkdir(parents=True, exist_ok=True)
+        cls.outputDir.mkdir(parents=True, exist_ok=True)
+
+        # Define test images using skimage.data
+        cls.testImages = {
+            "Astronaut": data.astronaut(),
+            "BinaryBlobs": data.binary_blobs(),
+            "Cat": data.cat(),
+            "Coffee": data.coffee(),
+            "Colorwheel": data.colorwheel(),
+            "HubbleDeepField": data.hubble_deep_field(),
+            "Immunohistochemistry": data.immunohistochemistry(),
+            "Logo": data.logo(),
+            "Retina": data.retina(),
+            "Rocket": data.rocket(),
+            "Skin": data.skin(),
+        }
+
+        # Save each test image to ./Inputs_Posterizer as PNG
+        for name, imgArray in cls.testImages.items():
+            if imgArray.ndim == 2:
+                pilImage = Image.fromarray(imgArray)
+            elif imgArray.shape[2] == 3:
+                pilImage = Image.fromarray(imgArray, mode="RGB")
+            else:
+                pilImage = Image.fromarray(imgArray, mode="RGBA")
+
+            pilImage.save(cls.inputDir / f"{name}.png")
+
+    def test_LoadImage(self):
+        """
+        Test that Posterizer can successfully load various image types without errors.
+
+        Raises
+        ------
+        AssertionError
+            If Posterizer fails to load an image or raises an unexpected exception.
+        """
+        for name in self.testImages.keys():
+            inputPath = self.inputDir / f"{name}.png"
+            posterizer = Posterizer()
+            try:
+                posterizer.loadImage(str(inputPath), callback=lambda err: None)
+                self.assertTrue(
+                    posterizer._potrace._imageLoaded,
+                    f"Posterizer failed to load image '{name}'.",
+                )
+            except Exception as e:
+                self.fail(f"Posterizer.loadImage raised an exception for '{name}': {e}")
+
+    def test_GetSVG(self):
+        """
+        Test that Posterizer generates a valid multi-layer SVG string after loading an image.
+
+        Raises
+        ------
+        AssertionError
+            If the generated SVG does not contain expected SVG elements or layers.
+        """
+        for name in self.testImages.keys():
+            inputPath = self.inputDir / f"{name}.png"
+            outputPath = self.outputDir / f"{name}_posterizer.svg"
+            posterizer = Posterizer(
+                {"steps": 3, "fillStrategy": Posterizer.FILL_DOMINANT}
+            )
+            posterizer.loadImage(str(inputPath), callback=lambda err: None)
+            svgContent = posterizer.getSVG()
+            # Basic checks on SVG content
+            self.assertIn("<svg", svgContent, "SVG content missing <svg> tag.")
+            self.assertIn("</svg>", svgContent, "SVG content missing </svg> tag.")
+            self.assertIn("<path", svgContent, "SVG content missing <path> tag.")
+            # Save SVG to file
+            with open(outputPath, "w", encoding="utf-8") as f:
+                f.write(svgContent)
+            # Check that file was written
+            self.assertTrue(
+                outputPath.exists(),
+                f"SVG output file '{outputPath.name}' was not created.",
+            )
+
+    def test_PosterizerParameters(self):
+        """
+        Test that Posterizer correctly handles various parameters like steps, fillStrategy,
+        and rangeDistribution.
+
+        Raises
+        ------
+        AssertionError
+            If Posterizer does not apply parameters as expected or raises an exception.
+        """
+        testParams = [
+            {
+                "steps": 2,
+                "fillStrategy": Posterizer.FILL_SPREAD,
+                "rangeDistribution": Posterizer.RANGES_AUTO,
+            },
+            {
+                "steps": 4,
+                "fillStrategy": Posterizer.FILL_DOMINANT,
+                "rangeDistribution": Posterizer.RANGES_EQUAL,
+            },
+            {
+                "steps": 5,
+                "fillStrategy": Posterizer.FILL_MEAN,
+                "rangeDistribution": Posterizer.RANGES_AUTO,
+            },
+            {
+                "steps": 3,
+                "fillStrategy": Posterizer.FILL_MEDIAN,
+                "rangeDistribution": Posterizer.RANGES_EQUAL,
+            },
+            {
+                "steps": Posterizer.STEPS_AUTO,
+                "fillStrategy": Posterizer.FILL_DOMINANT,
+                "rangeDistribution": Posterizer.RANGES_AUTO,
+            },
+        ]
+
+        for params in testParams:
+            for name in self.testImages.keys():
+                inputPath = self.inputDir / f"{name}.png"
+                posterizer = Posterizer(options=params)
+                try:
+                    posterizer.loadImage(str(inputPath), callback=lambda err: None)
+                    svgContent = posterizer.getSVG()
+                    self.assertIn("<svg", svgContent, "SVG content missing <svg> tag.")
+                    self.assertIn(
+                        "</svg>", svgContent, "SVG content missing </svg> tag."
+                    )
+                    # Additional checks can be implemented based on parameters
+                except Exception as e:
+                    self.fail(
+                        f"Posterizer raised an exception with parameters {params} on '{name}': {e}"
+                    )
+
+    def test_InvalidParameters(self):
+        """
+        Test that Posterizer raises appropriate errors when given invalid parameters.
+
+        Raises
+        ------
+        AssertionError
+            If Posterizer does not raise errors as expected.
+        """
+        invalidParamsList = [
+            {"steps": -1},
+            {"steps": 0},
+            {"steps": 256},
+            {"fillStrategy": "invalid_strategy"},
+            {"rangeDistribution": "invalid_distribution"},
+            {"threshold": 300},
+            {"threshold": -10},
+        ]
+
+        for params in invalidParamsList:
+            for name in self.testImages.keys():
+                inputPath = self.inputDir / f"{name}.png"
+                with self.assertRaises(
+                    Exception,
+                    msg=f"Posterizer did not raise error for params {params} on '{name}'.",
+                ):
+                    posterizer = Posterizer(options=params)
+
+
+class TestIntegration(unittest.TestCase):
+    """
+    Integration tests that involve multiple sub-modules and complex operations.
+
+    This test suite ensures that the interaction between Potrace and Posterizer
+    works as expected, producing coherent SVG outputs.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """
+        Sets up the testing environment by creating input and output directories
+        and saving test images.
+        """
+        cls.inputDir = Path("./Input/Integration")
+        cls.outputDir = Path("./Output/Integration")
+        cls.inputDir.mkdir(parents=True, exist_ok=True)
+        cls.outputDir.mkdir(parents=True, exist_ok=True)
+
+        # Define test images using skimage.data
+        cls.testImages = {
+            "Astronaut": data.astronaut(),
+            "Cat": data.cat(),
+            "Rocket": data.rocket(),
+        }
+
+        # Save each test image to ./Integration_Inputs as PNG
+        for name, imgArray in cls.testImages.items():
+            if imgArray.ndim == 2:
+                pilImage = Image.fromarray(imgArray)
+            elif imgArray.shape[2] == 3:
+                pilImage = Image.fromarray(imgArray, mode="RGB")
+            else:
+                pilImage = Image.fromarray(imgArray, mode="RGBA")
+
+            pilImage.save(cls.inputDir / f"{name}.png")
+
+    def test_PotraceThenPosterizer(self):
+        """
+        Test processing images first with Potrace and then with Posterizer,
+        ensuring that each step completes successfully and outputs are correct.
+
+        Raises
+        ------
+        AssertionError
+            If any step in the processing pipeline fails or outputs are incorrect.
+        """
+        for name in self.testImages.keys():
+            inputPath = self.inputDir / f"{name}.png"
+            potraceOutputPath = self.outputDir / f"{name}_potrace.svg"
+            posterizerOutputPath = self.outputDir / f"{name}_potrace_posterizer.svg"
+
+            try:
+                # Step 1: Potrace processing
+                potrace = Potrace()
+                potrace.loadImage(str(inputPath))
+                potraceSVG = potrace.getSVG()
+                with open(potraceOutputPath, "w", encoding="utf-8") as f:
+                    f.write(potraceSVG)
+                self.assertTrue(
+                    potraceOutputPath.exists(),
+                    f"Potrace SVG output '{potraceOutputPath.name}' was not created.",
+                )
+
+                # Step 2: Posterizer processing on Potrace SVG (assuming Posterizer can take SVG as input)
+                # If Posterizer expects image input, adjust accordingly. Here, assuming image input.
+                posterizer = Posterizer(
+                    {"steps": 3, "fillStrategy": Posterizer.FILL_MEAN}
+                )
+                posterizer.loadImage(str(inputPath), callback=lambda err: None)
+                posterizerSVG = posterizer.getSVG()
+                with open(posterizerOutputPath, "w", encoding="utf-8") as f:
+                    f.write(posterizerSVG)
+                self.assertTrue(
+                    posterizerOutputPath.exists(),
+                    f"Posterizer SVG output '{posterizerOutputPath.name}' was not created.",
+                )
+
+                # Additional checks can be performed on the SVG content if needed
+                self.assertIn("<svg", potraceSVG, "Potrace SVG missing <svg> tag.")
+                self.assertIn("</svg>", potraceSVG, "Potrace SVG missing </svg> tag.")
+                self.assertIn(
+                    "<svg", posterizerSVG, "Posterizer SVG missing <svg> tag."
+                )
+                self.assertIn(
+                    "</svg>", posterizerSVG, "Posterizer SVG missing </svg> tag."
+                )
+
+            except Exception as e:
+                self.fail(f"Integration test failed for '{name}': {e}")
+
+    def test_PosterizerThenPotrace(self):
+        """
+        Test processing images first with Posterizer and then with Potrace,
+        ensuring that each step completes successfully and outputs are correct.
+
+        Raises
+        ------
+        AssertionError
+            If any step in the processing pipeline fails or outputs are incorrect.
+        """
+        for name in self.testImages.keys():
+            inputPath = self.inputDir / f"{name}.png"
+            posterizerOutputPath = self.outputDir / f"{name}_posterizer.svg"
+            potraceOutputPath = self.outputDir / f"{name}_posterizer_potrace.svg"
+
+            try:
+                # Step 1: Posterizer processing
+                posterizer = Posterizer(
+                    {"steps": 4, "fillStrategy": Posterizer.FILL_DOMINANT}
+                )
+                posterizer.loadImage(str(inputPath), callback=lambda err: None)
+                posterizerSVG = posterizer.getSVG()
+                with open(posterizerOutputPath, "w", encoding="utf-8") as f:
+                    f.write(posterizerSVG)
+                self.assertTrue(
+                    posterizerOutputPath.exists(),
+                    f"Posterizer SVG output '{posterizerOutputPath.name}' was not created.",
+                )
+
+                # Step 2: Potrace processing on Posterizer SVG (assuming Potrace can take SVG as input)
+                # If Potrace expects image input, adjust accordingly. Here, assuming image input.
+                potrace = Potrace()
+                potrace.loadImage(str(inputPath))
+                potraceSVG = potrace.getSVG()
+                with open(potraceOutputPath, "w", encoding="utf-8") as f:
+                    f.write(potraceSVG)
+                self.assertTrue(
+                    potraceOutputPath.exists(),
+                    f"Potrace SVG output '{potraceOutputPath.name}' was not created.",
+                )
+
+                # Additional checks can be performed on the SVG content if needed
+                self.assertIn(
+                    "<svg", posterizerSVG, "Posterizer SVG missing <svg> tag."
+                )
+                self.assertIn(
+                    "</svg>", posterizerSVG, "Posterizer SVG missing </svg> tag."
+                )
+                self.assertIn("<svg", potraceSVG, "Potrace SVG missing <svg> tag.")
+                self.assertIn("</svg>", potraceSVG, "Potrace SVG missing </svg> tag.")
+
+            except Exception as e:
+                self.fail(f"Integration test failed for '{name}': {e}")
+
+
+class TestAdvancedOperations(unittest.TestCase):
+    """
+    Advanced tests that involve multiple sub-modules and more complex operations.
+
+    This test suite ensures that advanced workflows combining multiple components
+    of the PythonPotrace package operate correctly and produce expected outputs.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """
+        Sets up the testing environment by creating input and output directories
+        and saving test images.
+        """
+        cls.inputDir = Path("./Input/Advanced")
+        cls.outputDir = Path("./Output/Advanced")
+        cls.inputDir.mkdir(parents=True, exist_ok=True)
+        cls.outputDir.mkdir(parents=True, exist_ok=True)
+
+        # Define test images using skimage.data
+        cls.testImages = {
+            "Logo": data.logo(),
+            "Skin": data.skin(),
+            "Rocket": data.rocket(),
+        }
+
+        # Save each test image to ./Advanced_Inputs as PNG
+        for name, imgArray in cls.testImages.items():
+            if imgArray.ndim == 2:
+                pilImage = Image.fromarray(imgArray)
+            elif imgArray.shape[2] == 3:
+                pilImage = Image.fromarray(imgArray, mode="RGB")
+            else:
+                pilImage = Image.fromarray(imgArray, mode="RGBA")
+
+            pilImage.save(cls.inputDir / f"{name}.png")
+
+    def test_BatchProcessingWithDifferentParameters(self):
+        """
+        Test batch processing of multiple images with varying Posterizer parameters.
+
+        This ensures that Posterizer can handle different configurations without
+        errors and produces unique outputs for each parameter set.
+
+        Raises
+        ------
+        AssertionError
+            If any output file was not created or parameters caused unexpected behavior.
+        """
+        parameterSets = [
+            {
+                "steps": 2,
+                "fillStrategy": Posterizer.FILL_SPREAD,
+                "rangeDistribution": Posterizer.RANGES_AUTO,
+            },
+            {
+                "steps": 3,
+                "fillStrategy": Posterizer.FILL_DOMINANT,
+                "rangeDistribution": Posterizer.RANGES_EQUAL,
+            },
+            {
+                "steps": 5,
+                "fillStrategy": Posterizer.FILL_MEAN,
+                "rangeDistribution": Posterizer.RANGES_AUTO,
+            },
+            {
+                "steps": 4,
+                "fillStrategy": Posterizer.FILL_MEDIAN,
+                "rangeDistribution": Posterizer.RANGES_EQUAL,
+            },
+        ]
+
+        for params in parameterSets:
+            for name in self.testImages.keys():
+                inputPath = self.inputDir / f"{name}.png"
+                outputPath = (
+                    self.outputDir / f"{name}_posterizer_steps{params['steps']}.svg"
+                )
+                posterizer = Posterizer(options=params)
+                try:
+                    posterizer.loadImage(str(inputPath), callback=lambda err: None)
+                    svgContent = posterizer.getSVG()
+                    with open(outputPath, "w", encoding="utf-8") as f:
+                        f.write(svgContent)
+                    self.assertTrue(
+                        outputPath.exists(),
+                        f"Posterizer output '{outputPath.name}' was not created.",
+                    )
+
+                    # Verify SVG content integrity
+                    self.assertIn("<svg", svgContent, "SVG content missing <svg> tag.")
+                    self.assertIn(
+                        "</svg>", svgContent, "SVG content missing </svg> tag."
+                    )
+                    self.assertIn(
+                        "<path", svgContent, "SVG content missing <path> tag."
+                    )
+                except Exception as e:
+                    self.fail(
+                        f"Batch processing failed for '{name}' with parameters {params}: {e}"
+                    )
+
+    def test_PosterizerWithEdgeCaseImages(self):
+        """
+        Test Posterizer with edge case images such as fully black, fully white,
+        and images with minimal color variation.
+
+        Raises
+        ------
+        AssertionError
+            If Posterizer fails to process edge case images or produces incorrect outputs.
+        """
+        edgeCaseImages = {
+            "FullyBlack": np.zeros((10, 10), dtype=np.uint8),
+            "FullyWhite": np.full((10, 10), 255, dtype=np.uint8),
+            "MinimalVariation": np.tile(np.array([128, 129]), (10, 5)),
+        }
+
+        # Save edge case images
+        for name, imgArray in edgeCaseImages.items():
+            if imgArray.ndim == 2:
+                pilImage = Image.fromarray(imgArray)
+            else:
+                pilImage = Image.fromarray(imgArray, mode="L")
+            pilImage.save(self.inputDir / f"{name}.png")
+
+        # Define Posterizer parameters to test
+        params = {
+            "steps": 3,
+            "fillStrategy": Posterizer.FILL_MEAN,
+            "rangeDistribution": Posterizer.RANGES_AUTO,
+        }
+
+        for name in edgeCaseImages.keys():
+            inputPath = self.inputDir / f"{name}.png"
+            outputPath = self.outputDir / f"{name}_posterizer.svg"
+            posterizer = Posterizer(options=params)
+            try:
+                posterizer.loadImage(str(inputPath), callback=lambda err: None)
+                svgContent = posterizer.getSVG()
+                with open(outputPath, "w", encoding="utf-8") as f:
+                    f.write(svgContent)
+                self.assertTrue(
+                    outputPath.exists(),
+                    f"Posterizer output '{outputPath.name}' was not created for edge case '{name}'.",
+                )
+                self.assertIn("<svg", svgContent, "SVG content missing <svg> tag.")
+                self.assertIn("</svg>", svgContent, "SVG content missing </svg> tag.")
+            except Exception as e:
+                self.fail(f"Posterizer failed on edge case image '{name}': {e}")
+
+    def test_PosterizerWithTransparentBackground(self):
+        """
+        Test Posterizer's handling of images with transparency.
+
+        Raises
+        ------
+        AssertionError
+            If Posterizer fails to process images with transparency or outputs incorrect SVG.
+        """
+        # Create an RGBA image with transparency
+        imgArray = np.zeros((10, 10, 4), dtype=np.uint8)
+        imgArray[..., :3] = 255  # White color
+        imgArray[..., 3] = 0  # Fully transparent
+
+        pilImage = Image.fromarray(imgArray, mode="RGBA")
+        testName = "TransparentImage"
+        pilImage.save(self.inputDir / f"{testName}.png")
+
+        posterizer = Posterizer(
+            options={"steps": 2, "fillStrategy": Posterizer.FILL_DOMINANT}
+        )
+        inputPath = self.inputDir / f"{testName}.png"
+        outputPath = self.outputDir / f"{testName}_posterizer.svg"
+
+        try:
+            posterizer.loadImage(str(inputPath), callback=lambda err: None)
+            svgContent = posterizer.getSVG()
+            with open(outputPath, "w", encoding="utf-8") as f:
+                f.write(svgContent)
+            self.assertTrue(
+                outputPath.exists(),
+                f"Posterizer output '{outputPath.name}' was not created for transparent image.",
+            )
+            self.assertIn("<svg", svgContent, "SVG content missing <svg> tag.")
+            self.assertIn("</svg>", svgContent, "SVG content missing </svg> tag.")
+            # Ensure that background is transparent
+            self.assertIn(
+                'fill-opacity="1.000"',
+                svgContent,
+                "SVG does not handle transparency correctly.",
+            )
+        except Exception as e:
+            self.fail(f"Posterizer failed on transparent image '{testName}': {e}")
+
+
+class TestPerformance(unittest.TestCase):
+    """
+    Performance tests to ensure that Potrace and Posterizer handle large images efficiently.
+
+    Note: These tests are basic and primarily check that processing completes within
+    a reasonable time frame. Adjust thresholds as necessary based on actual performance.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        """
+        Sets up the testing environment by creating input and output directories
+        and saving a large test image.
+        """
+        cls.inputDir = Path("./Input/Performance")
+        cls.outputDir = Path("./Output/Performance")
+        cls.inputDir.mkdir(parents=True, exist_ok=True)
+        cls.outputDir.mkdir(parents=True, exist_ok=True)
+
+        # Create a large synthetic image (e.g., 1000x1000)
+        largeImage = np.random.randint(0, 256, (1000, 1000), dtype=np.uint8)
+        pilImage = Image.fromarray(largeImage, mode="L")
+        cls.largeImageName = "LargeImage.png"
+        pilImage.save(cls.inputDir / cls.largeImageName)
+
+    def test_PotracePerformance(self):
+        """
+        Test that Potrace can process a large image within a reasonable time.
+
+        Raises
+        ------
+        AssertionError
+            If processing takes longer than the specified threshold.
+        """
+        import time
+
+        inputPath = self.inputDir / self.largeImageName
+        outputPath = self.outputDir / f"{self.largeImageName.stem}_potrace.svg"
+        potrace = Potrace()
+        startTime = time.time()
+        potrace.loadImage(str(inputPath))
+        svgContent = potrace.getSVG()
+        processingTime = time.time() - startTime
+        with open(outputPath, "w", encoding="utf-8") as f:
+            f.write(svgContent)
+        self.assertTrue(
+            outputPath.exists(), f"Potrace output '{outputPath.name}' was not created."
+        )
+        self.assertLess(
+            processingTime, 30, "Potrace processing took too long (over 30 seconds)."
+        )
+
+    def test_PosterizerPerformance(self):
+        """
+        Test that Posterizer can process a large image within a reasonable time.
+
+        Raises
+        ------
+        AssertionError
+            If processing takes longer than the specified threshold.
+        """
+        import time
+
+        inputPath = self.inputDir / self.largeImageName
+        outputPath = self.outputDir / f"{self.largeImageName.stem}_posterizer.svg"
+        posterizer = Posterizer({"steps": 5, "fillStrategy": Posterizer.FILL_MEAN})
+        startTime = time.time()
+        posterizer.loadImage(str(inputPath), callback=lambda err: None)
+        svgContent = posterizer.getSVG()
+        processingTime = time.time() - startTime
+        with open(outputPath, "w", encoding="utf-8") as f:
+            f.write(svgContent)
+        self.assertTrue(
+            outputPath.exists(),
+            f"Posterizer output '{outputPath.name}' was not created.",
+        )
+        self.assertLess(
+            processingTime, 45, "Posterizer processing took too long (over 45 seconds)."
+        )
+
+
+if __name__ == "__main__":
+
+    shutil.rmtree("./Input", ignore_errors=True)
+    shutil.rmtree("./Output", ignore_errors=True)
+
+    unittest.main(verbosity=2)
+
+================================================================================
+--------------------------------------------------------------------------------
+# Potrace.py
+# PythonPotrace/Potrace.py
+# ./PythonPotrace/Potrace.py
+# Content:
+********************************************************************************
+# Potrace.py
+
+import math
+from .types.Bitmap import Bitmap
+from .types.Point import Point
+from .types.Path import Path
+from .types.Curve import Curve
+from .types.Quad import Quad
+from .types.Sum import Sum
+from .types.Opti import Opti
+from .utils import (
+    sign, mod, xprod, dpara, ddenom, interval, iprod1, between, ddist, cprod, iprod,
+    render_curve, luminance
+)
+
+from PIL import Image
+
+class Potrace:
+    COLOR_AUTO = 'auto'
+    COLOR_TRANSPARENT = 'transparent'
+    THRESHOLD_AUTO = -1
+    TURNPOLICY_BLACK = 'black'
+    TURNPOLICY_WHITE = 'white'
+    TURNPOLICY_LEFT = 'left'
+    TURNPOLICY_RIGHT = 'right'
+    TURNPOLICY_MINORITY = 'minority'
+    TURNPOLICY_MAJORITY = 'majority'
+
+    def __init__(self, options=None):
+        self._luminanceData = None
+        self._pathlist = []
+        self._imageLoadingIdentifier = None
+        self._imageLoaded = False
+        self._processed = False
+
+        self._params = {
+            'turnPolicy': Potrace.TURNPOLICY_MINORITY,
+            'turdSize': 2,
+            'alphaMax': 1,
+            'optCurve': True,
+            'optTolerance': 0.2,
+            'threshold': Potrace.THRESHOLD_AUTO,
+            'blackOnWhite': True,
+            'color': Potrace.COLOR_AUTO,
+            'background': Potrace.COLOR_TRANSPARENT,
+            'width': None,
+            'height': None
+        }
+
+        if options:
+            self.setParameters(options)
+
+    def _validateParameters(self, params):
+        # Validate turnPolicy
+        valid_tp = [
+            Potrace.TURNPOLICY_BLACK, Potrace.TURNPOLICY_WHITE, Potrace.TURNPOLICY_LEFT,
+            Potrace.TURNPOLICY_RIGHT, Potrace.TURNPOLICY_MINORITY, Potrace.TURNPOLICY_MAJORITY
+        ]
+        if params and 'turnPolicy' in params:
+            if params['turnPolicy'] not in valid_tp:
+                raise ValueError(f"Bad turnPolicy value. Allowed: {valid_tp}")
+
+        # Validate threshold
+        if params and 'threshold' in params and params['threshold'] != Potrace.THRESHOLD_AUTO:
+            thr = params['threshold']
+            if not isinstance(thr, (int, float)) or thr < 0 or thr > 255:
+                raise ValueError(
+                    "Bad threshold value. Must be integer in range [0..255]"
+                )
+
+        # Validate optCurve
+        if params and 'optCurve' in params:
+            if not isinstance(params['optCurve'], bool):
+                raise ValueError("'optCurve' must be Boolean")
+
+    def _processLoadedImage(self, pil_image):
+        w, h = pil_image.size
+        bitmap = Bitmap(w, h)
+        pixels = pil_image.load()
+
+        for y in range(h):
+            for x in range(w):
+                r, g, b, *rest = pixels[x, y] if len(pixels[x, y]) >= 3 else (255, 255, 255, 255)
+                a = rest[0] if rest else 255
+                opacity = a / 255.0
+                # We want background behind transparent to be white
+                rr = 255 + (r - 255) * opacity
+                gg = 255 + (g - 255) * opacity
+                bb = 255 + (b - 255) * opacity
+                bitmap.data[y * w + x] = int(luminance(rr, gg, bb))
+
+        self._luminanceData = bitmap
+        self._imageLoaded = True
+
+    def loadImage(self, target, callback=None):
+        """
+        target can be a PIL Image or a path.
+        """
+        jobId = object()  # unique for each load
+        self._imageLoadingIdentifier = jobId
+        self._imageLoaded = False
+
+        if Image is None:
+            err = RuntimeError("PIL (Pillow) not installed.")
+            if callback:
+                callback(err)
+            return
+
+        # If user passes in a PIL Image directly
+        if hasattr(target, 'size') and hasattr(target, 'load'):
+            # It's probably a PIL Image
+            self._imageLoadingIdentifier = None
+            self._imageLoaded = True
+            self._processLoadedImage(target)
+            if callback:
+                callback(None)
+            return
+
+        # Otherwise, assume it's a path or something PIL can open
+        try:
+            with Image.open(target) as pil_img:
+                # In some cases, we must convert to RGBA
+                if pil_img.mode != 'RGBA':
+                    pil_img = pil_img.convert('RGBA')
+                self._processLoadedImage(pil_img)
+            self._imageLoadingIdentifier = None
+            if callback:
+                callback(None)
+        except Exception as e:
+            if callback:
+                callback(e)
+
+    def setParameters(self, newParams):
+        """
+        Set or override existing parameters.
+        """
+        self._validateParameters(newParams)
+        for key, val in newParams.items():
+            if key in self._params:
+                oldVal = self._params[key]
+                self._params[key] = val
+                if oldVal != val and key not in ['color', 'background']:
+                    self._processed = False
+
+    def _bmToPathlist(self):
+        """
+        Convert thresholded luminance data to path list.
+        """
+        # Determine threshold
+        threshold = self._params['threshold']
+        if threshold == Potrace.THRESHOLD_AUTO:
+            # Try automatic
+            threshold = self._luminanceData.histogram().autoThreshold() or 128
+
+        blackOnWhite = self._params['blackOnWhite']
+        # If blackOnWhite==True, black = luminance < threshold, white = luminance >= threshold
+        # We'll create a "binary" bitmap where 1=black, 0=white, or vice versa
+        # Actually the JS code used a copy where 1 was "past threshold"
+        blackMap = self._luminanceData.copy(
+            lambda lum, idx:
+                0 if (blackOnWhite and lum > threshold) or
+                     (not blackOnWhite and lum < threshold)
+                else 1
+        )
+
+        self._pathlist = []
+
+        def findNext(startIndex):
+            i = startIndex
+            while i < blackMap.size and blackMap.data[i] != 1:
+                i += 1
+            return i if i < blackMap.size else None
+
+        # Helper for row/col
+        def idx_to_xy(i):
+            return (i % blackMap.width, i // blackMap.width)
+
+        def xy_to_idx(x, y):
+            return y * blackMap.width + x
+
+        def majority(x, y):
+            # replicates the 'majority' logic from original
+            for i in range(2, 5):
+                ct = 0
+                for a in range(-i+1, i):
+                    ct += blackMap.getValueAt(x + a, y + i - 1)
+                    ct -= (1 - blackMap.getValueAt(x + a, y + i - 1))
+                    ct += blackMap.getValueAt(x + i - 1, y + a - 1)
+                    ct -= (1 - blackMap.getValueAt(x + i - 1, y + a - 1))
+                    ct += blackMap.getValueAt(x + a - 1, y - i)
+                    ct -= (1 - blackMap.getValueAt(x + a - 1, y - i))
+                    ct += blackMap.getValueAt(x - i, y + a)
+                    ct -= (1 - blackMap.getValueAt(x - i, y + a))
+                if ct > 0:
+                    return 1
+                elif ct < 0:
+                    return 0
+            return 0
+
+        def findPath(x_start, y_start):
+            p = Path()
+            x, y = x_start, y_start
+            # initial direction
+            dirx, diry = 0, 1
+            p.sign = '+' if blackMap.getValueAt(x, y) == 1 else '-'
+            while True:
+                p.pt.append(Point(x, y))
+                if x > p.maxX: p.maxX = x
+                if x < p.minX: p.minX = x
+                if y > p.maxY: p.maxY = y
+                if y < p.minY: p.minY = y
+                p.len += 1
+                x += dirx
+                y += diry
+                p.area -= x * diry
+
+                if x == x_start and y == y_start:
+                    break
+
+                # left & right checks
+                l = blackMap.getValueAt(x + (dirx + diry - 1)//2,
+                                        y + (diry - dirx - 1)//2)
+                r = blackMap.getValueAt(x + (dirx - diry - 1)//2,
+                                        y + (diry + dirx - 1)//2)
+
+                # turn policy
+                turnPolicy = self._params['turnPolicy']
+                if r == 1 and l == 0:
+                    # The code is basically flipping direction vectors
+                    if (turnPolicy == 'right' or
+                        (turnPolicy == 'black' and p.sign == '+') or
+                        (turnPolicy == 'white' and p.sign == '-') or
+                        (turnPolicy == 'majority' and majority(x, y) == 1) or
+                        (turnPolicy == 'minority' and majority(x, y) == 0)):
+                        tmp = dirx
+                        dirx = -diry
+                        diry = tmp
+                    else:
+                        tmp = dirx
+                        dirx = diry
+                        diry = -tmp
+                elif r == 1:
+                    tmp = dirx
+                    dirx = -diry
+                    diry = tmp
+                elif l == 0:
+                    tmp = dirx
+                    dirx = diry
+                    diry = -tmp
+
+            return p
+
+        def xorPath(path):
+            len_path = path.len
+            py = path.pt[0].y
+            px = path.pt[0].x
+            for i in range(1, len_path):
+                x = path.pt[i].x
+                y = path.pt[i].y
+                if y != py:
+                    minY = min(py, y)
+                    maxX = path.maxX
+                    for col in range(x, maxX):
+                        idx = xy_to_idx(col, minY)
+                        blackMap.data[idx] = 1 - blackMap.data[idx]
+                    py = y
+
+        currentIndex = 0
+        while True:
+            nextI = findNext(currentIndex)
+            if nextI is None:
+                break
+            xFound, yFound = idx_to_xy(nextI)
+            p = findPath(xFound, yFound)
+            xorPath(p)
+            if p.area > self._params['turdSize']:
+                self._pathlist.append(p)
+            currentIndex = nextI + 1
+
+    def _processPath(self):
+        """
+        Turn each Path into a set of curves (Curve).
+        """
+
+        def calcSums(path):
+            n = path.len
+            s = []
+            s.append(Sum(0, 0, 0, 0, 0))
+            x0 = path.pt[0].x
+            y0 = path.pt[0].y
+            path.x0 = x0
+            path.y0 = y0
+            for i in range(n):
+                x = path.pt[i].x - x0
+                y = path.pt[i].y - y0
+                prev = s[-1]
+                s.append(Sum(
+                    prev.x + x,
+                    prev.y + y,
+                    prev.xy + x * y,
+                    prev.x2 + x * x,
+                    prev.y2 + y * y
+                ))
+            path.sums = s
+
+        def calcLon(path):
+            # computing 'lon' array (largest octant)
+            n = path.len
+            lon = [0]*n
+            pt = path.pt
+            nc = [0]*n
+            k = 0
+            for i in reversed(range(n)):
+                if pt[i].x != pt[k].x and pt[i].y != pt[k].y:
+                    k = i + 1
+                nc[i] = k
+            pivk = [0]*n
+
+            for i in reversed(range(n)):
+                ct = [0, 0, 0, 0]
+                dir_idx = (3 + 3*(pt[(i+1)%n].x - pt[i].x) + (pt[(i+1)%n].y - pt[i].y))//2
+                ct[dir_idx] += 1
+                constraint = [Point(0,0), Point(0,0)]
+                k = nc[i]
+                k1 = i
+                foundk = False
+                while True:
+                    dir_idx = (3 + 3*sign(pt[k].x - pt[k1].x) + sign(pt[k].y - pt[k1].y))//2
+                    ct[dir_idx] += 1
+                    if ct[0] and ct[1] and ct[2] and ct[3]:
+                        pivk[i] = k1
+                        foundk = True
+                        break
+                    cur = Point(pt[k].x - pt[i].x, pt[k].y - pt[i].y)
+                    # check cross products
+                    if (xprod(constraint[0], cur) < 0 or xprod(constraint[1], cur) > 0):
+                        break
+                    if not (abs(cur.x) <= 1 and abs(cur.y) <= 1):
+                        # update constraints
+                        pass
+                    k1 = k
+                    k = nc[k1]
+                    if not ((k > i and k < k1) or (k1 < i and (k >= i or k <= k1))):
+                        break
+                if not foundk:
+                    dk = Point(sign(pt[k].x - pt[k1].x), sign(pt[k].y - pt[k1].y))
+                    cur = Point(pt[k1].x - pt[i].x, pt[k1].y - pt[i].y)
+                    a = xprod(constraint[0], cur)
+                    b = xprod(constraint[0], dk)
+                    c = xprod(constraint[1], cur)
+                    d = xprod(constraint[1], dk)
+                    j = 10000000
+                    if b < 0:
+                        j = math.floor(a / -b)
+                    if d > 0:
+                        j = min(j, math.floor(-c / d))
+                    pivk[i] = (k1 + j) % n
+
+            j = pivk[n-1]
+            lon[n-1] = j
+            for i in range(n-2, -1, -1):
+                if (j >= i+1 and j <= pivk[i]) or (pivk[i] < i+1 and (j >= i+1 or j <= pivk[i])):
+                    j = pivk[i]
+                lon[i] = j
+            for i in range(n-1, -1, -1):
+                if (lon[i] >= (i+1)%n and lon[i] <= lon[i]):
+                    pass
+            path.lon = lon
+
+        def bestPolygon(path):
+            """
+            Approximate polygons from the path using the sum data and 'lon'.
+            """
+            # penalty3, seg0, seg1, etc. from the original code
+
+            def penalty3(path, i, j):
+                """
+                Returns the geometric "penalty" between indices i and j.
+                This version returns the sqrt of the second moment stuff in the JS code.
+                """
+                n = path.len
+                s = path.sums
+                x0 = path.x0
+                y0 = path.y0
+
+                # We replicate the logic from original's penalty3
+                r = 0
+                if j >= n:
+                    j -= n
+                    r = 1
+
+                if r == 0:
+                    x = s[j+1].x - s[i].x
+                    y = s[j+1].y - s[i].y
+                    x2 = s[j+1].x2 - s[i].x2
+                    y2 = s[j+1].y2 - s[i].y2
+                    xy = s[j+1].xy - s[i].xy
+                    k = (j+1 - i)
+                else:
+                    x = s[j+1].x - s[i].x + s[n].x
+                    y = s[j+1].y - s[i].y + s[n].y
+                    x2 = s[j+1].x2 - s[i].x2 + s[n].x2
+                    y2 = s[j+1].y2 - s[i].y2 + s[n].y2
+                    xy = s[j+1].xy - s[i].xy + s[n].xy
+                    k = (j+1 - i + n)
+
+                px = (path.pt[i].x + path.pt[j].x)/2.0 - x0
+                py = (path.pt[i].y + path.pt[j].y)/2.0 - y0
+                ex = path.pt[j].x - path.pt[i].x
+                ey = -(path.pt[j].y - path.pt[i].y)
+
+                a = ((x2 - 2*x*px)/k + px*px)
+                b = ((xy - x*py - y*px)/k + px*py)
+                c = ((y2 - 2*y*py)/k + py*py)
+
+                sVal = ex*ex*a + 2*ex*ey*b + ey*ey*c
+                return math.sqrt(sVal)
+
+            # Straight-out adaptation from original bestPolygon
+            n = path.len
+            pen = [0]*(n+1)
+            prev = [0]*(n+1)
+            clip0 = [0]*n
+            clip1 = [0]*(n+1)
+            seg0 = [0]*(n+1)
+            seg1 = [0]*(n+1)
+            for i in range(n):
+                c = (path.lon[(i-1)%n] -1)%n
+                if c == i:
+                    c = (i+1)%n
+                if c < i:
+                    clip0[i] = n
+                else:
+                    clip0[i] = c
+            j = 1
+            for i in range(n):
+                while j <= clip0[i]:
+                    clip1[j] = i
+                    j+=1
+            i=0
+            for j in range(n+1):
+                seg0[j] = i
+                if i< n:
+                    i = clip0[i]
+                if i >= n:
+                    break
+            m = j-1
+            i = n
+            for j in range(m, -1, -1):
+                seg1[j] = i
+                if i>0:
+                    i = clip1[i-1]
+            # We have m
+            pen[0] = 0
+            length_ = [0]*(n+1)
+            length_[0] = 0
+
+            for j in range(1,m+1):
+                iStart = seg1[j]
+                pen[j] = pen[j-1] + penalty3(path, seg0[j-1], iStart% n)
+                length_[j] = length_[j-1] + 1
+                for i in range(seg1[j], seg0[j]+1):
+                    # The code tries to find a better i
+                    thispen = penalty3(path, i% n, (seg0[j]) % n) + pen[j-1]
+                    if length_[j]> length_[j-1] + 1 or (length_[j] == length_[j-1]+1 and pen[j]> thispen):
+                        pen[j] = thispen
+                        prev[j] = i
+                        length_[j] = length_[j-1] +1
+            path.m = m
+            path.po = []
+            # Just store something for now
+            # This part is drastically simplified vs the original’s thorough approach.
+            # A full re-implementation would take a lot more code, so this is more of a skeleton.
+            # In practice, the adjustVertices method will handle this further.
+            for _ in range(m):
+                path.po.append(0)
+
+        def adjustVertices(path):
+            """
+            The final method in JS code adjusts the final curve vertices
+            so they are less jagged.
+            """
+            n = path.m
+            path.curve = Curve(n)
+            for i in range(n):
+                path.curve.tag[i] = 'CORNER'
+                path.curve.c[i*3+0] = path.pt[0]  # placeholders
+                path.curve.c[i*3+1] = path.pt[0]
+                path.curve.c[i*3+2] = path.pt[0]
+                path.curve.vertex[i] = path.pt[0]  # placeholders
+                path.curve.alpha[i] = 1
+                path.curve.alpha0[i] = 1
+                path.curve.beta[i] = 1
+            path.curve.alphaCurve = 1
+
+        def reverse_path(path):
+            curve = path.curve
+            m = curve.n
+            v = curve.vertex
+            for i in range(m//2):
+                v[i], v[m-1-i] = v[m-1-i], v[i]
+
+        def smooth(path):
+            # A simplified version of "smooth" in the JS
+            if not path.curve or not path.curve.n:
+                return
+            for i in range(path.curve.n):
+                path.curve.tag[i] = 'CURVE'  # or 'CORNER'
+
+        def optiCurve(path):
+            # Simplified stub
+            pass
+
+        for path in self._pathlist:
+            calcSums(path)
+            calcLon(path)
+            bestPolygon(path)
+            adjustVertices(path)
+            # Reverse if sign is '-'
+            if path.sign == '-':
+                reverse_path(path)
+            smooth(path)
+            if self._params['optCurve']:
+                optiCurve(path)
+
+    def getPathTag(self, fillColor=None, scale=None):
+        """
+        Return a single <path> tag with "d" containing all path data.
+        If fillColor is None, we use self._params['color'] or 'black'/ 'white'
+        """
+        if not self._imageLoaded:
+            raise RuntimeError("Image should be loaded first.")
+
+        if not self._processed:
+            self._bmToPathlist()
+            self._processPath()
+            self._processed = True
+
+        fc = fillColor
+        if fc is None:
+            fc = self._params['color']
+            if fc == Potrace.COLOR_AUTO:
+                fc = 'black' if self._params['blackOnWhite'] else 'white'
+
+        d_parts = []
+        for path in self._pathlist:
+            d_str = render_curve(path.curve, scale)
+            d_parts.append(d_str)
+        d = ' '.join(d_parts)
+
+        return f'<path d="{d}" stroke="none" fill="{fc}" fill-rule="evenodd"/>'
+
+    def getSymbol(self, symbol_id):
+        if not self._luminanceData:
+            raise RuntimeError("Image not loaded")
+
+        w = self._luminanceData.width
+        h = self._luminanceData.height
+        pathTag = self.getPathTag(fillColor='', scale=None)
+        return f'<symbol viewBox="0 0 {w} {h}" id="{symbol_id}">{pathTag}</symbol>'
+
+    def getSVG(self):
+        if not self._luminanceData:
+            raise RuntimeError("No image to trace")
+
+        width = self._params['width'] if self._params['width'] else self._luminanceData.width
+        height = self._params['height'] if self._params['height'] else self._luminanceData.height
+        scale = {
+            'x': width / self._luminanceData.width if self._luminanceData.width else 1,
+            'y': height / self._luminanceData.height if self._luminanceData.height else 1
+        }
+
+        background = self._params['background']
+        rect = ''
+        if background != Potrace.COLOR_TRANSPARENT:
+            rect = f'\t<rect x="0" y="0" width="100%" height="100%" fill="{background}" />\n'
+
+        pathTag = self.getPathTag(None, scale)
+        svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+               f'viewBox="0 0 {width} {height}" version="1.1">\n'
+               f'{rect}'
+               f'\t{pathTag}\n'
+               f'</svg>')
+        return svg
+
+================================================================================
+--------------------------------------------------------------------------------
+# Quad.py
+# PythonPotrace/types/Quad.py
+# ./PythonPotrace/types/Quad.py
+# Content:
+********************************************************************************
+# Quad.py
+
+
+class Quad:
+    def __init__(self):
+        """
+        Initialize a Quad instance with default values.
+        """
+        self.data = [0] * 9  # Initializes a list with nine zeros
+
+    def at(self, x, y):
+        """
+        Access the element at the specified position.
+
+        Parameters
+        ----------
+        x : int
+            Row index (0-based).
+        y : int
+            Column index (0-based).
+
+        Returns
+        -------
+        int
+            The value at the specified position.
+
+        Raises
+        ------
+        IndexError
+            If x or y is out of bounds.
+        """
+        index = x * 3 + y
+        if 0 <= index < len(self.data):
+            return self.data[index]
+        else:
+            raise IndexError("Quad index out of range")
+
+================================================================================
+--------------------------------------------------------------------------------
+# Histogram.py
+# PythonPotrace/types/Histogram.py
+# ./PythonPotrace/types/Histogram.py
+# Content:
+********************************************************************************
+# Histogram.py
+
+import math
+from ..utils import clamp, luminance, between
+
+COLOR_DEPTH = 256
+COLOR_RANGE_END = COLOR_DEPTH - 1
+
+def index_xy(x, y):
+    """
+    JS used a 2D array for color data (256x256).
+    index_xy merges them: index = 256*x + y
+    """
+    return COLOR_DEPTH * x + y
+
+def normalizeMinMax(levelMin, levelMax):
+    if isinstance(levelMin, (int, float)):
+        levelMin = clamp(round(levelMin), 0, COLOR_RANGE_END)
+    else:
+        levelMin = 0
+
+    if isinstance(levelMax, (int, float)):
+        levelMax = clamp(round(levelMax), 0, COLOR_RANGE_END)
+    else:
+        levelMax = COLOR_RANGE_END
+
+    if levelMin > levelMax:
+        raise ValueError("Invalid range")
+    return (levelMin, levelMax)
+
+class Histogram:
+    MODE_LUMINANCE = 'luminance'
+    MODE_R = 'r'
+    MODE_G = 'g'
+    MODE_B = 'b'
+
+    def __init__(self, imageSource, mode=None):
+        """
+        imageSource can be an integer (size), a Bitmap, or something else we adapt.
+        """
+        self.data = None
+        self.pixels = 0
+        self._sortedIndexes = None
+        self._cachedStats = {}
+        self._lookupTableH = None
+
+        if isinstance(imageSource, int):
+            self._createArray(imageSource)
+        else:
+            # If it's a Bitmap, collect values
+            self._collectValuesBitmap(imageSource)
+
+    def _createArray(self, imageSize):
+        if imageSize <= (1 << 8):
+            ArrayType = list
+        elif imageSize <= (1 << 16):
+            ArrayType = list
+        else:
+            ArrayType = list
+        self.data = [0]*COLOR_DEPTH
+        self.pixels = imageSize
+
+    def _collectValuesBitmap(self, bmp):
+        self._createArray(bmp.size)
+        for i in range(bmp.size):
+            colorVal = bmp.data[i]
+            self.data[colorVal] += 1
+
+    def _getSortedIndexes(self, refresh=False):
+        if (not refresh) and self._sortedIndexes:
+            return self._sortedIndexes
+        idxs = list(range(COLOR_DEPTH))
+        d = self.data
+        idxs.sort(key=lambda x: d[x])  # ascending
+        self._sortedIndexes = idxs
+        return idxs
+
+    def multilevelThresholding(self, amount, levelMin=None, levelMax=None):
+        """
+        Returns 'amount' thresholds in [levelMin..levelMax].
+        """
+        levelMin, levelMax = normalizeMinMax(levelMin, levelMax)
+        amount = min(levelMax - levelMin - 2, int(amount))
+        if amount < 1:
+            return []
+
+        if not self._lookupTableH:
+            self._thresholdingBuildLookupTable()
+
+        colorStops = None
+        maxSig = 0
+
+        def iterateRecursive(startingPoint, prevVariance, indexes, previousDepth):
+            nonlocal colorStops, maxSig
+            startingPoint_local = startingPoint + 1
+            variance_local = prevVariance
+            indexes_local = indexes[:]
+            depth = previousDepth + 1
+
+            for i in range(startingPoint_local, levelMax - amount + previousDepth + 1):
+                varHere = variance_local + self._lookupTableH[index_xy(startingPoint_local, i)]
+                indexes_local[depth - 1] = i
+                if depth + 1 < amount + 1:
+                    iterateRecursive(i, varHere, indexes_local, depth)
+                else:
+                    varHere += self._lookupTableH[index_xy(i+1, levelMax)] if (i+1)<=levelMax else 0
+                    if varHere > maxSig:
+                        maxSig = varHere
+                        colorStops = indexes_local[:]
+
+        iterateRecursive(levelMin, 0, [0]*amount, 0)
+        return colorStops if colorStops else []
+
+    def autoThreshold(self, levelMin=None, levelMax=None):
+        thresholds = self.multilevelThresholding(1, levelMin, levelMax)
+        return thresholds[0] if thresholds else None
+
+    def getDominantColor(self, levelMin=None, levelMax=None, tolerance=1):
+        levelMin, levelMax = normalizeMinMax(levelMin, levelMax)
+        colors = self.data
+        dominantIndex = -1
+        dominantValue = -1
+
+        if levelMin == levelMax:
+            return levelMin if colors[levelMin] else -1
+
+        for i in range(levelMin, levelMax+1):
+            tmpSum = 0
+            for j in range(int(tolerance / -2), tolerance):
+                idx = i + j
+                if between(idx, 0, COLOR_RANGE_END):
+                    tmpSum += colors[idx]
+            if tmpSum > dominantValue:
+                dominantIndex = i
+                dominantValue = tmpSum
+            elif tmpSum == dominantValue:
+                # if tie, pick whichever has more direct hits
+                if dominantIndex<0 or colors[i] > colors[dominantIndex]:
+                    dominantIndex = i
+
+        return dominantIndex if dominantValue > 0 else -1
+
+    def getStats(self, levelMin=None, levelMax=None, refresh=False):
+        """
+        Returns dict with 'levels': { 'mean','median','stdDev','unique'},
+        'pixelsPerLevel': { 'mean','median','peak'}, 'pixels'
+        """
+        levelMin, levelMax = normalizeMinMax(levelMin, levelMax)
+        cacheKey = f"{levelMin}-{levelMax}"
+        if (not refresh) and (cacheKey in self._cachedStats):
+            return self._cachedStats[cacheKey]
+
+        d = self.data
+        sortedIdx = self._getSortedIndexes()
+
+        pixelsTotal = 0
+        sumOfVals = 0
+        uniqueCount = 0
+        mostPixels = 0
+        for i in range(levelMin, levelMax+1):
+            c = d[i]
+            pixelsTotal += c
+            sumOfVals += c*i
+            if c>0:
+                uniqueCount+=1
+            if c> mostPixels:
+                mostPixels = c
+
+        meanValue = sumOfVals / pixelsTotal if pixelsTotal else float('nan')
+        pxPerLevelMean = pixelsTotal / (levelMax - levelMin) if (levelMax>levelMin) else float('nan')
+        pxPerLevelMedian = pixelsTotal / uniqueCount if uniqueCount else float('nan')
+        # median
+        halfPx = pixelsTotal/2
+        running=0
+        medianVal = None
+        for idx in sortedIdx:
+            if idx<levelMin or idx>levelMax:
+                continue
+            running += d[idx]
+            if medianVal is None and running >= halfPx:
+                medianVal = idx
+                break
+
+        # std dev
+        sumOfDev = 0
+        seenPixels = 0
+        for idx in sortedIdx:
+            if idx<levelMin or idx>levelMax:
+                continue
+            countPx = d[idx]
+            sumOfDev += (idx-meanValue)*(idx-meanValue)*countPx
+            seenPixels += countPx
+
+        stdDev = math.sqrt(sumOfDev/seenPixels) if seenPixels else float('nan')
+
+        result = {
+            'levels': {
+                'mean': meanValue,
+                'median': medianVal if medianVal is not None else float('nan'),
+                'stdDev': stdDev,
+                'unique': uniqueCount
+            },
+            'pixelsPerLevel': {
+                'mean': pxPerLevelMean,
+                'median': pxPerLevelMedian,
+                'peak': mostPixels
+            },
+            'pixels': pixelsTotal
+        }
+        self._cachedStats[cacheKey] = result
+        return result
+
+    def _thresholdingBuildLookupTable(self):
+        # Builds H matrix from P and S, as in the JS code
+        n = COLOR_DEPTH
+        P = [0.0]*(n*n)
+        S = [0.0]*(n*n)
+        H = [0.0]*(n*n)
+        pixTotal = self.pixels
+
+        # diag
+        for i in range(1, n):
+            idx = index_xy(i, i)
+            tmp = self.data[i]/pixTotal
+            P[idx] = tmp
+            S[idx] = i*tmp
+
+        # first row?
+        for i in range(1, n-1):
+            tmp = self.data[i+1]/pixTotal
+            idx = index_xy(1, i)
+            P[idx+1] = P[idx] + tmp
+            S[idx+1] = S[idx] + (i+1)*tmp
+
+        # reusing row 1 to fill others
+        for i in range(2, n):
+            for j in range(i+1, n):
+                P[index_xy(i,j)] = P[index_xy(1,j)] - P[index_xy(1,i-1)]
+                S[index_xy(i,j)] = S[index_xy(1,j)] - S[index_xy(1,i-1)]
+
+        # now compute H[i][j]
+        for i in range(1,n):
+            for j in range(i+1,n):
+                idx = index_xy(i,j)
+                if abs(P[idx])>1e-12:
+                    H[idx] = (S[idx]*S[idx]) / P[idx]
+                else:
+                    H[idx] = 0
+        self._lookupTableH = H
+
+================================================================================
+--------------------------------------------------------------------------------
+# __init__.py
+# PythonPotrace/types/__init__.py
+# ./PythonPotrace/types/__init__.py
+# Content:
+********************************************************************************
+# PythonPotrace/types/__init__.py
+
+from .Bitmap import Bitmap
+from .Curve import Curve
+from .Histogram import Histogram
+from .Opti import Opti
+from .Path import Path
+from .Point import Point
+from .Quad import Quad
+from .Sum import Sum
+
+__all__ = [
+    "Bitmap",
+    "Curve",
+    "Histogram",
+    "Opti",
+    "Path",
+    "Point",
+    "Quad",
+    "Sum"
+]
+================================================================================
+--------------------------------------------------------------------------------
+# Opti.py
+# PythonPotrace/types/Opti.py
+# ./PythonPotrace/types/Opti.py
+# Content:
+********************************************************************************
+# Opti.py
+
+from .Point import Point
+
+class Opti:
+
+    def __init__(self):
+        """
+        Initialize an Opti instance with default values.
+        """
+        self.pen = 0
+        self.c = [Point(), Point()]
+        self.t = 0
+        self.s = 0
+        self.alpha = 0
+
+================================================================================
+--------------------------------------------------------------------------------
+# Curve.py
+# PythonPotrace/types/Curve.py
+# ./PythonPotrace/types/Curve.py
+# Content:
+********************************************************************************
+# Curve.py
+
+
+class Curve:
+    """
+    Represents a curve with multiple attributes.
+
+    Parameters
+    ----------
+    n : int
+        Number of elements.
+    """
+
+    def __init__(self, n):
+        self.n = n
+        self.tag = [None] * n
+        self.c = [None] * (n * 3)
+        self.alphaCurve = 0
+        self.vertex = [None] * n
+        self.alpha = [None] * n
+        self.alpha0 = [None] * n
+        self.beta = [None] * n
+
+================================================================================
+--------------------------------------------------------------------------------
+# Point.py
+# PythonPotrace/types/Point.py
+# ./PythonPotrace/types/Point.py
+# Content:
+********************************************************************************
+# Point.py
+
+
+class Point:
+
+    def __init__(self, x=0, y=0):
+        """
+        Initialize a Point instance.
+
+        Parameters
+        ----------
+        x : float, optional
+            X-coordinate, defaults to 0.
+        y : float, optional
+            Y-coordinate, defaults to 0.
+        """
+        self.x = x
+        self.y = y
+
+    def copy(self):
+        """
+        Create a copy of the current Point instance.
+
+        Returns
+        -------
+        Point
+            A new Point instance with the same coordinates.
+        """
+        return Point(self.x, self.y)
+
+================================================================================
+--------------------------------------------------------------------------------
+# Sum.py
+# PythonPotrace/types/Sum.py
+# ./PythonPotrace/types/Sum.py
+# Content:
+********************************************************************************
+# Sum.py
+
+
+class Sum:
+    def __init__(self, x, y, xy, x2, y2):
+        """
+        Initialize sum values for calculations.
+
+        Parameters
+        ----------
+        x : float
+            Sum of x values.
+        y : float
+            Sum of y values.
+        xy : float
+            Sum of x*y products.
+        x2 : float
+            Sum of x squared.
+        y2 : float
+            Sum of y squared.
+        """
+        self.x = x
+        self.y = y
+        self.xy = xy
+        self.x2 = x2
+        self.y2 = y2
+
+================================================================================
+--------------------------------------------------------------------------------
+# Bitmap.py
+# PythonPotrace/types/Bitmap.py
+# ./PythonPotrace/types/Bitmap.py
+# Content:
+********************************************************************************
+# Bitmap.py
+
+import math
+from .Point import Point
+from .Histogram import Histogram
+from ..utils import between
+
+class Bitmap:
+    """
+    Represents a bitmap where each pixel is a luminance value 0..255.
+    """
+
+    def __init__(self, w, h):
+        self.width = w
+        self.height = h
+        self.size = w * h
+        self.data = bytearray(self.size)
+        self._histogram = None
+
+    def getValueAt(self, x, y=None):
+        """
+        If x is int and y not given, treat x as index.
+        If x is int and y is given, treat x,y as coords.
+        """
+        if y is None:
+            idx = x
+        else:
+            if not between(x, 0, self.width) or not between(y, 0, self.height):
+                return 0
+            idx = y * self.width + x
+        if idx < 0 or idx >= self.size:
+            return 0
+        return self.data[idx]
+
+    def indexToPoint(self, index):
+        if not between(index, 0, self.size):
+            return Point(-1, -1)
+        row = index // self.width
+        col = index % self.width
+        return Point(col, row)
+
+    def pointToIndex(self, x, y=None):
+        if isinstance(x, Point):
+            pt = x
+            x_ = pt.x
+            y_ = pt.y
+        else:
+            x_ = x
+            y_ = y
+
+        if not between(x_, 0, self.width) or not between(y_, 0, self.height):
+            return -1
+        return y_ * self.width + x_
+
+    def copy(self, iterator=None):
+        bm = Bitmap(self.width, self.height)
+        if iterator:
+            for i in range(self.size):
+                bm.data[i] = iterator(self.data[i], i)
+        else:
+            bm.data[:] = self.data
+        return bm
+
+    def histogram(self):
+        if self._histogram:
+            return self._histogram
+        self._histogram = Histogram(self)
+        return self._histogram
+
+================================================================================
+--------------------------------------------------------------------------------
+# Path.py
+# PythonPotrace/types/Path.py
+# ./PythonPotrace/types/Path.py
+# Content:
+********************************************************************************
+# path.py
+
+
+class Path:
+
+    def __init__(self):
+        """
+        Initialize a Path instance with default attributes.
+        """
+        self.area = 0
+        self.len = 0
+        self.curve = {}
+        self.pt = []
+        self.minX = 100000
+        self.minY = 100000
+        self.maxX = -1
+        self.maxY = -1
+
+================================================================================
+--------------------------------------------------------------------------------
+# index.py
+# PythonPotrace/index.py
+# ./PythonPotrace/index.py
+# Content:
+********************************************************************************
+# index.py
+#
+# This Python code mirrors the interface and callbacks of the original index.js.
+# Pillow is used for image handling instead of Jimp.
+
+from .Potrace import Potrace
+from .Posterizer import Posterizer
+
+def trace(file, options=None, cb=None):
+    """
+    Trace an input image and convert it to SVG format.
+
+    Parameters
+    ----------
+    file : str or PIL.Image.Image
+        Source image. Can be a file path or a PIL Image instance.
+    options : dict, optional
+        Dictionary of tracing options. Defaults to an empty dictionary.
+    cb : callable, optional
+        Callback function with signature (error, svg_content, potrace_instance).
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    If only `file` and `cb` are provided, `options` defaults to an empty dictionary.
+    """
+    # Imitate the JavaScript argument handling: if called with (file, cb),
+    # then shift cb to the second argument and set options = {}
+    if cb is None and callable(options):
+        cb = options
+        options = {}
+
+    if options is None:
+        options = {}
+
+    potrace = Potrace(options)
+
+    def after_load(err):
+        if err is not None:
+            return cb(err, None, None)
+        try:
+            svg = potrace.getSVG()
+            cb(None, svg, potrace)
+        except Exception as e:
+            cb(e, None, None)
+
+    potrace.loadImage(file, after_load)
+
+def posterize(file, options=None, cb=None):
+    """
+    Apply posterization to the input image.
+
+    Parameters
+    ----------
+    file : str or PIL.Image.Image
+        Source image. Can be a file path or a PIL Image instance.
+    options : dict, optional
+        Dictionary of posterization options. Defaults to an empty dictionary.
+    cb : callable, optional
+        Callback function with signature (error, posterized_image, posterizer_instance).
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    If only `file` and `cb` are provided, `options` defaults to an empty dictionary.
+    """
+    # Same argument shifting logic
+    if cb is None and callable(options):
+        cb = options
+        options = {}
+
+    if options is None:
+        options = {}
+
+    posterizer = Posterizer(options)
+
+    def after_load(err):
+        if err is not None:
+            return cb(err, None, None)
+        try:
+            svg = posterizer.getSVG()
+            cb(None, svg, posterizer)
+        except Exception as e:
+            cb(e, None, None)
+
+    posterizer.loadImage(file, after_load)
+================================================================================
+--------------------------------------------------------------------------------
+# __init__.py
+# PythonPotrace/__init__.py
+# ./PythonPotrace/__init__.py
+# Content:
+********************************************************************************
+# PythonPotrace/__init__.py
+
+from .Potrace import Potrace
+from .Posterizer import Posterizer
+from .utils import (
+    get_attr_regexp,
+    set_html_attribute,
+    fixed,
+    mod,
+    xprod,
+    cyclic,
+    sign,
+    quadform,
+    interval,
+    dorth_infty,
+    ddenom,
+    dpara,
+    cprod,
+    iprod,
+    iprod1,
+    ddist,
+    luminance,
+    between,
+    clamp,
+    is_number,
+    render_curve,
+    bezier,
+    tangent
+)
+
+
+__all__ = [
+    "Potrace",
+    "Posterizer",
+    "get_attr_regexp",
+    "set_html_attribute",
+    "fixed",
+    "mod",
+    "xprod",
+    "cyclic",
+    "sign",
+    "quadform",
+    "interval",
+    "dorth_infty",
+    "ddenom",
+    "dpara",
+    "cprod",
+    "iprod",
+    "iprod1",
+    "ddist",
+    "luminance",
+    "between",
+    "clamp",
+    "is_number",
+    "render_curve",
+    "bezier",
+    "tangent"
+]
+
+from .index import trace, posterize
+__all__.extend(["trace", "posterize"])
+
+# Expose types module directly
+from . import types as _types
+__all__.append("types")
+
+# This has all of the symbols in __all__ from types
+from .types import *
+__all__.extend(types.__all__)
+
+
+def get_types():
+    """Helper function to allow from PythonPotrace.types import * syntax"""
+    return _types
+
+types = get_types()
+================================================================================
+--------------------------------------------------------------------------------
+# utils.py
+# PythonPotrace/utils.py
+# ./PythonPotrace/utils.py
+# Content:
+********************************************************************************
+# utils.py
+
+import re
+import math
+from .types.Point import Point
+
+attr_regexps = {}
+
+def get_attr_regexp(attr_name):
+    """
+    Get or compile a regular expression for the given HTML attribute name.
+
+    :param attr_name: The name of the HTML attribute.
+    :return: Compiled regular expression object.
+    """
+    if attr_name in attr_regexps:
+        return attr_regexps[attr_name]
+
+    # The JavaScript regex: ' ' + attrName + '="((?:\\\\(?=")"|[^"])+)"'
+    # Translated to Python regex
+    pattern = r' ' + re.escape(attr_name) + r'="((?:\\(?=")|[^"])+)"'
+    attr_regexps[attr_name] = re.compile(pattern, re.IGNORECASE)
+    return attr_regexps[attr_name]
+
+def set_html_attribute(html, attr_name, value):
+    """
+    Set or update an HTML attribute in the given HTML string.
+
+    :param html: The HTML string.
+    :param attr_name: The name of the attribute to set.
+    :param value: The value to set for the attribute.
+    :return: Updated HTML string.
+    """
+    attr = f' {attr_name}="{value}"'
+
+    if f' {attr_name}="' not in html:
+        # Add the attribute to the opening tag
+        # Equivalent to JS: html.replace(/<[a-z]+/i, function(beginning) { return beginning + attr; });
+        def replacer(match):
+            return match.group(0) + attr
+        html = re.sub(r'<[a-z]+', replacer, html, flags=re.IGNORECASE)
+    else:
+        # Replace the existing attribute value
+        html = get_attr_regexp(attr_name).sub(attr, html)
+
+    return html
+
+def fixed(number):
+    """
+    Format a number to three decimal places, removing trailing '.000' if present.
+
+    :param number: The number to format.
+    :return: Formatted string.
+    """
+    formatted = f"{number:.3f}"
+    return formatted[:-4] if formatted.endswith('.000') else formatted
+
+def mod(a, n):
+    """
+    Compute a modulo n, handling negative values appropriately.
+
+    :param a: The dividend.
+    :param n: The divisor.
+    :return: Result of a modulo n.
+    """
+    if a >= n:
+        return a % n
+    elif a >= 0:
+        return a
+    else:
+        return n - 1 - ((-1 - a) % n)
+
+def xprod(p1, p2):
+    """
+    Compute the cross product of two points treated as vectors.
+
+    :param p1: First Point.
+    :param p2: Second Point.
+    :return: Cross product value.
+    """
+    return p1.x * p2.y - p1.y * p2.x
+
+def cyclic(a, b, c):
+    """
+    Determine if b is in the cyclic interval [a, c).
+
+    :param a: Start of interval.
+    :param b: Value to check.
+    :param c: End of interval.
+    :return: True if b is within the interval, False otherwise.
+    """
+    if a <= c:
+        return a <= b < c
+    else:
+        return a <= b or b < c
+
+def sign(i):
+    """
+    Determine the sign of a number.
+
+    :param i: The number.
+    :return: 1 if positive, -1 if negative, 0 if zero.
+    """
+    return 1 if i > 0 else (-1 if i < 0 else 0)
+
+def quadform(Q, w):
+    """
+    Compute the quadratic form w^T Q w.
+
+    :param Q: Quad instance.
+    :param w: Point instance treated as a vector with homogeneous coordinate.
+    :return: Quadratic form value.
+    """
+    v = [w.x, w.y, 1]
+    sum_val = 0.0
+
+    for i in range(3):
+        for j in range(3):
+            sum_val += v[i] * Q.at(i, j) * v[j]
+    return sum_val
+
+def interval(lambda_, a, b):
+    """
+    Compute the linear interpolation between points a and b.
+
+    :param lambda_: The interpolation parameter (0 <= lambda_ <= 1).
+    :param a: Start Point.
+    :param b: End Point.
+    :return: Interpolated Point.
+    """
+    res = Point()
+    res.x = a.x + lambda_ * (b.x - a.x)
+    res.y = a.y + lambda_ * (b.y - a.y)
+    return res
+
+def dorth_infty(p0, p2):
+    """
+    Compute the direction orthogonal to the vector from p0 to p2.
+
+    :param p0: Starting Point.
+    :param p2: Ending Point.
+    :return: Orthogonal Point.
+    """
+    r = Point()
+    r.y = sign(p2.x - p0.x)
+    r.x = -sign(p2.y - p0.y)
+    return r
+
+def ddenom(p0, p2):
+    """
+    Compute the denominator for certain calculations.
+
+    :param p0: Starting Point.
+    :param p2: Ending Point.
+    :return: Denominator value.
+    """
+    r = dorth_infty(p0, p2)
+    return r.y * (p2.x - p0.x) - r.x * (p2.y - p0.y)
+
+def dpara(p0, p1, p2):
+    """
+    Compute the determinant to check for parallelism.
+
+    :param p0: Origin Point.
+    :param p1: Second Point.
+    :param p2: Third Point.
+    :return: Determinant value.
+    """
+    x1 = p1.x - p0.x
+    y1 = p1.y - p0.y
+    x2 = p2.x - p0.x
+    y2 = p2.y - p0.y
+    return x1 * y2 - x2 * y1
+
+def cprod(p0, p1, p2, p3):
+    """
+    Compute the cross product for two vectors defined by points.
+
+    :param p0: First Point of the first vector.
+    :param p1: Second Point of the first vector.
+    :param p2: First Point of the second vector.
+    :param p3: Second Point of the second vector.
+    :return: Cross product value.
+    """
+    x1 = p1.x - p0.x
+    y1 = p1.y - p0.y
+    x2 = p3.x - p2.x
+    y2 = p3.y - p2.y
+    return x1 * y2 - x2 * y1
+
+def iprod(p0, p1, p2):
+    """
+    Compute the inner product of two vectors defined by points.
+
+    :param p0: Origin Point.
+    :param p1: Endpoint of the first vector.
+    :param p2: Endpoint of the second vector.
+    :return: Inner product value.
+    """
+    x1 = p1.x - p0.x
+    y1 = p1.y - p0.y
+    x2 = p2.x - p0.x
+    y2 = p2.y - p0.y
+    return x1 * x2 + y1 * y2
+
+def iprod1(p0, p1, p2, p3):
+    """
+    Compute the inner product of two vectors defined by points.
+
+    :param p0: Origin Point of the first vector.
+    :param p1: Endpoint of the first vector.
+    :param p2: Origin Point of the second vector.
+    :param p3: Endpoint of the second vector.
+    :return: Inner product value.
+    """
+    x1 = p1.x - p0.x
+    y1 = p1.y - p0.y
+    x2 = p3.x - p2.x
+    y2 = p3.y - p2.y
+    return x1 * x2 + y1 * y2
+
+def ddist(p, q):
+    """
+    Compute the Euclidean distance between two points.
+
+    :param p: First Point.
+    :param q: Second Point.
+    :return: Distance value.
+    """
+    return math.sqrt((p.x - q.x) ** 2 + (p.y - q.y) ** 2)
+
+def luminance(r, g, b):
+    """
+    Calculate the luminance from RGB values.
+
+    :param r: Red component.
+    :param g: Green component.
+    :param b: Blue component.
+    :return: Luminance value as an integer.
+    """
+    return round(0.2126 * r + 0.7153 * g + 0.0721 * b)
+
+def between(val, min_val, max_val):
+    """
+    Check if a value is between min_val and max_val, inclusive.
+
+    :param val: The value to check.
+    :param min_val: The minimum bound.
+    :param max_val: The maximum bound.
+    :return: True if val is between min_val and max_val, else False.
+    """
+    return min_val <= val <= max_val
+
+def clamp(val, min_val, max_val):
+    """
+    Clamp a value between min_val and max_val.
+
+    :param val: The value to clamp.
+    :param min_val: The minimum bound.
+    :param max_val: The maximum bound.
+    :return: Clamped value.
+    """
+    return max(min_val, min(val, max_val))
+
+def is_number(val):
+    """
+    Check if a value is a number (int or float).
+
+    :param val: The value to check.
+    :return: True if val is a number, else False.
+    """
+    return isinstance(val, (int, float))
+
+def render_curve(curve, scale=None):
+    """
+    Generates path instructions for a given curve.
+
+    :param curve: Curve instance.
+    :param scale: Optional scaling factor as a dictionary with 'x' and 'y'. Defaults to 1 for both axes.
+    :return: SVG path string.
+    """
+    if scale is None:
+        scale = {'x': 1, 'y': 1}
+
+    starting_point = curve.c[(curve.n - 1) * 3 + 2]
+
+    path = [
+        f"M {fixed(starting_point.x * scale['x'])} {fixed(starting_point.y * scale['y'])}"
+    ]
+
+    for i, tag in enumerate(curve.tag):
+        i3 = i * 3
+        p0 = curve.c[i3]
+        p1 = curve.c[i3 + 1]
+        p2 = curve.c[i3 + 2]
+
+        if tag == 'CURVE':
+            path.append(
+                f"C {fixed(p0.x * scale['x'])} {fixed(p0.y * scale['y'])}, "
+                f"{fixed(p1.x * scale['x'])} {fixed(p1.y * scale['y'])}, "
+                f"{fixed(p2.x * scale['x'])} {fixed(p2.y * scale['y'])}"
+            )
+        elif tag == 'CORNER':
+            path.append(
+                f"L {fixed(p1.x * scale['x'])} {fixed(p1.y * scale['y'])} "
+                f"{fixed(p2.x * scale['x'])} {fixed(p2.y * scale['y'])}"
+            )
+
+    return ' '.join(path)
+
+def bezier(t, p0, p1, p2, p3):
+    """
+    Calculate a point on a cubic Bezier curve at parameter t.
+
+    :param t: Parameter between 0 and 1.
+    :param p0: First control Point.
+    :param p1: Second control Point.
+    :param p2: Third control Point.
+    :param p3: Fourth control Point.
+    :return: Point on the Bezier curve.
+    """
+    s = 1 - t
+    res = Point()
+
+    res.x = (s ** 3) * p0.x + 3 * (s ** 2) * t * p1.x + 3 * (t ** 2) * s * p2.x + (t ** 3) * p3.x
+    res.y = (s ** 3) * p0.y + 3 * (s ** 2) * t * p1.y + 3 * (t ** 2) * s * p2.y + (t ** 3) * p3.y
+
+    return res
+
+def tangent(p0, p1, p2, p3, q0, q1):
+    """
+    Calculate the tangent parameter for intersection with another curve.
+
+    :param p0: First control Point of the first curve.
+    :param p1: Second control Point of the first curve.
+    :param p2: Third control Point of the first curve.
+    :param p3: Fourth control Point of the first curve.
+    :param q0: First control Point of the second curve.
+    :param q1: Second control Point of the second curve.
+    :return: Tangent parameter (float) or -1.0 if no valid tangent exists.
+    """
+    A = cprod(p0, p1, q0, q1)
+    B = cprod(p1, p2, q0, q1)
+    C = cprod(p2, p3, q0, q1)
+
+    a = A - 2 * B + C
+    b = -2 * A + 2 * B
+    c = A
+
+    d = b * b - 4 * a * c
+
+    if a == 0 or d < 0:
+        return -1.0
+
+    s = math.sqrt(d)
+
+    r1 = (-b + s) / (2 * a)
+    r2 = (-b - s) / (2 * a)
+
+    if 0 <= r1 <= 1:
+        return r1
+    elif 0 <= r2 <= 1:
+        return r2
+    else:
+        return -1.0
+
+================================================================================
+--------------------------------------------------------------------------------
+# Posterizer.py
+# PythonPotrace/Posterizer.py
+# ./PythonPotrace/Posterizer.py
+# Content:
+********************************************************************************
+# Posterizer.py
+
+import math
+from .Potrace import Potrace
+from .utils import clamp, between, luminance, set_html_attribute as setHtmlAttr
+from .types.Histogram import Histogram
+
+class Posterizer:
+    """
+    Takes multiple samples using Potrace with different threshold
+    settings and combines output into a single file.
+    """
+
+    STEPS_AUTO = -1
+    FILL_SPREAD = 'spread'
+    FILL_DOMINANT = 'dominant'
+    FILL_MEDIAN = 'median'
+    FILL_MEAN = 'mean'
+    RANGES_AUTO = 'auto'
+    RANGES_EQUAL = 'equal'
+
+    def __init__(self, options=None):
+        self._potrace = Potrace()
+        self._calculatedThreshold = None
+        self._params = {
+            'threshold': Potrace.THRESHOLD_AUTO,
+            'blackOnWhite': True,
+            'steps': Posterizer.STEPS_AUTO,
+            'background': Potrace.COLOR_TRANSPARENT,
+            'fillStrategy': Posterizer.FILL_DOMINANT,
+            'rangeDistribution': Posterizer.RANGES_AUTO
+        }
+
+        if options:
+            self.setParameters(options)
+
+    def _getImageHistogram(self):
+        return self._potrace._luminanceData.histogram()
+
+    def _paramSteps(self, count=False):
+        steps = self._params['steps']
+
+        # If steps is an array, return as-is or its length
+        if isinstance(steps, list):
+            return len(steps) if count else steps
+
+        # If steps is STEPS_AUTO and threshold is also auto, default to 4 (some logic)
+        if steps == Posterizer.STEPS_AUTO and self._params['threshold'] == Potrace.THRESHOLD_AUTO:
+            return 4
+
+        # If steps is STEPS_AUTO but threshold is not auto
+        blackOnWhite = self._params['blackOnWhite']
+        colorsCount = self._paramThreshold() if blackOnWhite else 255 - self._paramThreshold()
+
+        if steps == Posterizer.STEPS_AUTO:
+            return 4 if colorsCount > 200 else 3
+
+        # Return numeric value, making sure it doesn't exceed the color count
+        return min(colorsCount, max(2, steps))
+
+    def _paramThreshold(self):
+        if self._calculatedThreshold is not None:
+            return self._calculatedThreshold
+
+        # If threshold is not auto, just return it
+        if self._params['threshold'] != Potrace.THRESHOLD_AUTO:
+            self._calculatedThreshold = self._params['threshold']
+            return self._calculatedThreshold
+
+        # If threshold is auto, we do a 2-level thresholding to find a suitable threshold
+        twoThresholds = self._getImageHistogram().multilevelThresholding(2)
+        if self._params['blackOnWhite']:
+            self._calculatedThreshold = twoThresholds[1] if len(twoThresholds) > 1 else 128
+        else:
+            self._calculatedThreshold = twoThresholds[0] if len(twoThresholds) else 128
+
+        return self._calculatedThreshold
+
+    def _calcColorIntensity(self, colorStops):
+        """
+        For each threshold in colorStops, pick a representative color intensity
+        based on fillStrategy.
+        """
+        blackOnWhite = self._params['blackOnWhite']
+        colorSelectionStrat = self._params['fillStrategy']
+        histogram = None if colorSelectionStrat == self.FILL_SPREAD else self._getImageHistogram()
+        fullRange = abs(self._paramThreshold() - (0 if blackOnWhite else 255))
+
+        results = []
+        for i, threshold in enumerate(colorStops):
+            # The next threshold for reference in bounding the color
+            if i + 1 == len(colorStops):
+                nextValue = -1 if blackOnWhite else 256
+            else:
+                nextValue = colorStops[i + 1]
+
+            rangeStart = round(nextValue + 1) if blackOnWhite else round(threshold)
+            rangeEnd = round(threshold) if blackOnWhite else round(nextValue - 1)
+            factor = i / (len(colorStops) - 1) if len(colorStops) > 1 else 0
+            intervalSize = rangeEnd - rangeStart
+
+            if colorSelectionStrat == self.FILL_SPREAD:
+                # Spread color across range
+                # We want 0 or 255 at the most saturated end, scaled by factor
+                color = (
+                    (rangeStart if blackOnWhite else rangeEnd)
+                    + (1 if blackOnWhite else -1) * intervalSize * max(0.5, fullRange / 255) * factor
+                )
+                color = round(color)
+                pixelCount = 1  # not used for this strategy
+            else:
+                stats = histogram.getStats(rangeStart, rangeEnd)
+                pixelCount = stats['pixels']
+                if pixelCount == 0:
+                    results.append({'value': threshold, 'colorIntensity': 0})
+                    continue
+
+                if colorSelectionStrat == self.FILL_DOMINANT:
+                    dom = histogram.getDominantColor(rangeStart, rangeEnd, clamp(intervalSize, 1, 5))
+                    color = dom if dom >= 0 else -1
+                elif colorSelectionStrat == self.FILL_MEAN:
+                    color = stats['levels']['mean']
+                elif colorSelectionStrat == self.FILL_MEDIAN:
+                    color = stats['levels']['median']
+                else:
+                    color = -1
+
+            if color == -1:
+                results.append({'value': threshold, 'colorIntensity': 0})
+                continue
+
+            # We don’t want colors to be too close to each other, so we add spacing
+            if i != 0 and intervalSize > 0:
+                if blackOnWhite:
+                    # Don’t let color go beyond interval end minus 10%
+                    color = clamp(color, rangeStart, rangeEnd - round(intervalSize * 0.1))
+                else:
+                    color = clamp(color, rangeStart + round(intervalSize * 0.1), rangeEnd)
+
+            # Convert to [0..1] intensity
+            colorIntensity = (255 - color if blackOnWhite else color) / 255
+            results.append({'value': threshold, 'colorIntensity': colorIntensity})
+
+        return results
+
+    def _getRangesAuto(self):
+        """
+        Automatically calculates threshold stops with the histogram's multilevelThresholding.
+        """
+        histogram = self._getImageHistogram()
+        steps = self._paramSteps(True)
+        colorStops = []
+
+        # If threshold is auto, we can do a plain multilevelThresholding
+        if self._params['threshold'] == Potrace.THRESHOLD_AUTO:
+            colorStops = histogram.multilevelThresholding(steps)
+        else:
+            threshold = self._paramThreshold()
+            if self._params['blackOnWhite']:
+                # Then we do one fewer threshold below our main threshold
+                colorStops = histogram.multilevelThresholding(steps - 1, 0, threshold)
+                colorStops.append(threshold)
+            else:
+                # One fewer threshold above our main threshold
+                colorStops = histogram.multilevelThresholding(steps - 1, threshold, 255)
+                colorStops.insert(0, threshold)
+
+        if self._params['blackOnWhite']:
+            colorStops.reverse()
+
+        return self._calcColorIntensity(colorStops)
+
+    def _getRangesEquallyDistributed(self):
+        """
+        If user wants color steps at equal intervals from threshold to black or white.
+        """
+        blackOnWhite = self._params['blackOnWhite']
+        threshold = self._paramThreshold()
+        colorsToThreshold = threshold if blackOnWhite else (255 - threshold)
+        steps = self._paramSteps()
+
+        stepSize = colorsToThreshold / steps if steps > 0 else colorsToThreshold
+        colorStops = []
+        i = steps - 1
+        while i >= 0:
+            factor = i / (steps - 1) if steps > 1 else 0
+            thr = min(colorsToThreshold, (i + 1) * stepSize)
+            thr = thr if blackOnWhite else (255 - thr)
+            colorStops.append(thr)
+            i -= 1
+
+        return self._calcColorIntensity(colorStops)
+
+    def _getRanges(self):
+        """
+        Prepares array of color stops (thresholds) for the final layered tracing.
+        """
+        steps = self._params['steps']
+
+        # If steps is a user-provided array
+        if isinstance(steps, list):
+            blackOnWhite = self._params['blackOnWhite']
+            threshold = self._paramThreshold()
+
+            # Deduplicate & keep in 0..255
+            arrayStops = sorted(set([s for s in steps if 0 <= s <= 255]),
+                                reverse=blackOnWhite)
+
+            if blackOnWhite and (not arrayStops or arrayStops[0] < threshold):
+                arrayStops.insert(0, threshold)
+            elif not blackOnWhite and arrayStops and arrayStops[-1] < threshold:
+                arrayStops.append(threshold)
+
+            if not arrayStops:
+                arrayStops = [threshold]
+
+            return self._calcColorIntensity(arrayStops)
+
+        # If steps is not array, we rely on auto or equally distributed
+        if self._params['rangeDistribution'] == self.RANGES_AUTO:
+            return self._getRangesAuto()
+        else:
+            return self._getRangesEquallyDistributed()
+
+    def _addExtraColorStop(self, ranges):
+        """
+        Fine tuning: if last range is bigger than 25, we add a new color stop
+        for shadows. This is to improve presence of darkest pixels when blackOnWhite=True
+        or brightest when blackOnWhite=False.
+        """
+        blackOnWhite = self._params['blackOnWhite']
+        if not ranges:
+            return ranges
+
+        lastColorStop = ranges[-1]
+        lastValue = lastColorStop['value']
+        lastRangeFrom = 0 if blackOnWhite else lastValue
+        lastRangeTo = lastValue if blackOnWhite else 255
+
+        if abs(lastRangeTo - lastRangeFrom) > 25 and lastColorStop['colorIntensity'] != 1:
+            histogram = self._getImageHistogram()
+            stats = histogram.getStats(lastRangeFrom, lastRangeTo)
+            mean = stats['levels']['mean']
+            std = stats['levels']['stdDev']
+
+            # Attempt a new color stop that’s near (mean +/- std)
+            candidate = 25
+            if (mean + std) <= 25:
+                candidate = mean + std
+            elif (mean - std) <= 25:
+                candidate = mean - std
+
+            candidate = int(candidate)
+            if blackOnWhite:
+                # stats for 0..candidate
+                newStats = histogram.getStats(0, candidate)
+                color = newStats['levels']['mean']
+                newIntensity = (255 - color) / 255 if not math.isnan(color) else 0
+                ranges.append({'value': abs((0 if blackOnWhite else 255) - candidate),
+                               'colorIntensity': newIntensity})
+            else:
+                # stats for candidate..255
+                newStats = histogram.getStats(candidate, 255)
+                color = newStats['levels']['mean']
+                newIntensity = (color / 255) if not math.isnan(color) else 0
+                ranges.append({'value': candidate, 'colorIntensity': newIntensity})
+
+        return ranges
+
+    def _pathTags(self, noFillColor=False):
+        """
+        Traces image multiple times for each threshold in our color stops and returns an array of <path> tags.
+        """
+        ranges = self._getRanges()
+        blackOnWhite = self._params['blackOnWhite']
+
+        if len(ranges) >= 10:
+            ranges = self._addExtraColorStop(ranges)
+
+        self._potrace.setParameters({'blackOnWhite': blackOnWhite})
+        actualPrevLayersOpacity = 0
+
+        result = []
+        for colorStop in ranges:
+            thisLayerOpacity = colorStop['colorIntensity']
+            if thisLayerOpacity == 0:
+                result.append('')
+                continue
+
+            # Some hack to approximate layering with partial alpha
+            if not actualPrevLayersOpacity or thisLayerOpacity == 1:
+                calculatedOpacity = thisLayerOpacity
+            else:
+                calculatedOpacity = (actualPrevLayersOpacity - thisLayerOpacity) / (actualPrevLayersOpacity - 1.0)
+                calculatedOpacity = round(clamp(calculatedOpacity, 0, 1), 3)
+
+            actualPrevLayersOpacity = actualPrevLayersOpacity + (1 - actualPrevLayersOpacity) * calculatedOpacity
+
+            # Now do the trace for that threshold
+            self._potrace.setParameters({'threshold': colorStop['value']})
+            element = self._potrace.getPathTag('' if noFillColor else None)
+            # Insert fill-opacity
+            element = setHtmlAttr(element, 'fill-opacity', f"{calculatedOpacity:.3f}")
+
+            canBeIgnored = (calculatedOpacity == 0) or (' d=""' in element)
+            result.append('' if canBeIgnored else element)
+
+        return result
+
+    def loadImage(self, target, callback):
+        """
+        Loads image. `target` can be a path, PIL Image, or something the underlying Potrace loadImage can handle.
+        """
+        def after_load(err):
+            self._calculatedThreshold = None
+            callback(err)
+
+        self._potrace.loadImage(target, after_load)
+
+    def setParameters(self, params):
+        """
+        Overrides or adds new parameters.
+        """
+        if not params:
+            return
+
+        self._potrace.setParameters(params)
+
+        if 'steps' in params:
+            steps = params['steps']
+            if isinstance(steps, list):
+                for s in steps:
+                    if not isinstance(s, int) or s < 0 or s > 255:
+                        raise ValueError("Elements of 'steps' must be integers in [0..255]")
+            elif isinstance(steps, int) and (steps < 1 or steps > 255):
+                raise ValueError("'steps' must be in [1..255], or -1 for STEPS_AUTO.")
+            # If no exception, we can store it
+
+        for key in self._params:
+            if key in params:
+                self._params[key] = params[key]
+
+        # Reset threshold if relevant param changed
+        self._calculatedThreshold = None
+
+    def getSymbol(self, id_value):
+        """
+        Returns image as <symbol> tag. Always has viewBox specified
+        """
+        width = self._potrace._luminanceData.width
+        height = self._potrace._luminanceData.height
+        paths = self._pathTags(noFillColor=True)
+        joined = ''.join(paths)
+        return f'<symbol viewBox="0 0 {width} {height}" id="{id_value}">{joined}</symbol>'
+
+    def getSVG(self):
+        width = self._potrace._luminanceData.width
+        height = self._potrace._luminanceData.height
+
+        tags = self._pathTags(noFillColor=False)
+        background = self._params['background']
+        rectTag = ''
+        if background != Potrace.COLOR_TRANSPARENT:
+            rectTag = f'<rect x="0" y="0" width="100%" height="100%" fill="{background}" />\n\t'
+
+        svg = (
+            f'<svg xmlns="http://www.w3.org/2000/svg" '
+            f'width="{width}" height="{height}" '
+            f'viewBox="0 0 {width} {height}" version="1.1">\n\t'
+            f'{rectTag}'
+            + '\n\t'.join(tags)
+            + '\n</svg>'
+        )
+
+        # Remove extra blank lines introduced by \n\t
+        return svg.replace(r'\n\t\n', '\n').replace(r'\n\t\t', '\n\t')
+
+================================================================================

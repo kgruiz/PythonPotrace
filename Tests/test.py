@@ -61,7 +61,7 @@ class TestBitmap(unittest.TestCase):
             for x in range(width):
                 idx = y * width + x
                 expected_value = idx * 10
-                actual_value = bmp.getValueAt(x, y)
+                actual_value = bmp.get_value_at(x, y)
                 self.assertEqual(
                     actual_value,
                     expected_value,
@@ -110,16 +110,16 @@ class TestBitmap(unittest.TestCase):
         bmp = Bitmap(width, height)
         # Accessing out-of-bounds should return -1
         self.assertEqual(
-            bmp.getValueAt(-1, 0), -1, "Out-of-bounds access did not return -1."
+            bmp.get_value_at(-1, 0), -1, "Out-of-bounds access did not return -1."
         )
         self.assertEqual(
-            bmp.getValueAt(0, -1), -1, "Out-of-bounds access did not return -1."
+            bmp.get_value_at(0, -1), -1, "Out-of-bounds access did not return -1."
         )
         self.assertEqual(
-            bmp.getValueAt(width, 0), -1, "Out-of-bounds access did not return -1."
+            bmp.get_value_at(width, 0), -1, "Out-of-bounds access did not return -1."
         )
         self.assertEqual(
-            bmp.getValueAt(0, height), -1, "Out-of-bounds access did not return -1."
+            bmp.get_value_at(0, height), -1, "Out-of-bounds access did not return -1."
         )
 
 
@@ -292,7 +292,7 @@ class TestPotrace(unittest.TestCase):
             inputPath = self.inputDir / f"{name}.png"
             potrace = Potrace()
             try:
-                potrace.loadImage(str(inputPath))
+                potrace.loadImage(str(inputPath), callback=lambda err: None)
                 self.assertTrue(
                     potrace._imageLoaded, f"Potrace failed to load image '{name}'."
                 )
@@ -312,7 +312,7 @@ class TestPotrace(unittest.TestCase):
             inputPath = self.inputDir / f"{name}.png"
             outputPath = self.outputDir / f"{name}_potrace.svg"
             potrace = Potrace()
-            potrace.loadImage(str(inputPath))
+            potrace.loadImage(str(inputPath), callback=lambda err: None)
             svgContent = potrace.getSVG()
             # Basic checks on SVG content
             self.assertIn("<svg", svgContent, "SVG content missing <svg> tag.")
@@ -355,7 +355,7 @@ class TestPotrace(unittest.TestCase):
                 inputPath = self.inputDir / f"{name}.png"
                 potrace = Potrace(options=params)
                 try:
-                    potrace.loadImage(str(inputPath))
+                    potrace.loadImage(str(inputPath), callback=lambda err: None)
                     potrace.getSVG()
                     # Further checks can be added to verify SVG content based on parameters
                     self.assertTrue(
@@ -603,7 +603,7 @@ class TestIntegration(unittest.TestCase):
             try:
                 # Step 1: Potrace processing
                 potrace = Potrace()
-                potrace.loadImage(str(inputPath))
+                potrace.loadImage(str(inputPath), callback=lambda err: None)
                 potraceSVG = potrace.getSVG()
                 with open(potraceOutputPath, "w", encoding="utf-8") as f:
                     f.write(potraceSVG)
@@ -671,7 +671,7 @@ class TestIntegration(unittest.TestCase):
                 # Step 2: Potrace processing on Posterizer SVG (assuming Potrace can take SVG as input)
                 # If Potrace expects image input, adjust accordingly. Here, assuming image input.
                 potrace = Potrace()
-                potrace.loadImage(str(inputPath))
+                potrace.loadImage(str(inputPath), callback=lambda err: None)
                 potraceSVG = potrace.getSVG()
                 with open(potraceOutputPath, "w", encoding="utf-8") as f:
                     f.write(potraceSVG)
@@ -809,15 +809,15 @@ class TestAdvancedOperations(unittest.TestCase):
         edgeCaseImages = {
             "FullyBlack": np.zeros((10, 10), dtype=np.uint8),
             "FullyWhite": np.full((10, 10), 255, dtype=np.uint8),
-            "MinimalVariation": np.tile(np.array([128, 129]), (10, 5)),
+            "MinimalVariation": np.tile(np.array([128, 129], dtype=np.uint8), (10, 5)),
         }
 
         # Save edge case images
         for name, imgArray in edgeCaseImages.items():
             if imgArray.ndim == 2:
-                pilImage = Image.fromarray(imgArray)
+                pilImage = Image.fromarray(imgArray.astype(np.uint8))
             else:
-                pilImage = Image.fromarray(imgArray, mode="L")
+                pilImage = Image.fromarray(imgArray.astype(np.uint8), mode="L")
             pilImage.save(self.inputDir / f"{name}.png")
 
         # Define Posterizer parameters to test
@@ -927,10 +927,10 @@ class TestPerformance(unittest.TestCase):
         import time
 
         inputPath = self.inputDir / self.largeImageName
-        outputPath = self.outputDir / f"{self.largeImageName.stem}_potrace.svg"
+        outputPath = self.outputDir / f"{Path(self.largeImageName).stem}_potrace.svg"
         potrace = Potrace()
         startTime = time.time()
-        potrace.loadImage(str(inputPath))
+        potrace.loadImage(str(inputPath), callback=lambda err: None)
         svgContent = potrace.getSVG()
         processingTime = time.time() - startTime
         with open(outputPath, "w", encoding="utf-8") as f:
@@ -954,7 +954,7 @@ class TestPerformance(unittest.TestCase):
         import time
 
         inputPath = self.inputDir / self.largeImageName
-        outputPath = self.outputDir / f"{self.largeImageName.stem}_posterizer.svg"
+        outputPath = self.outputDir / f"{Path(self.largeImageName).stem}_posterizer.svg"
         posterizer = Posterizer({"steps": 5, "fillStrategy": Posterizer.FILL_MEAN})
         startTime = time.time()
         posterizer.loadImage(str(inputPath), callback=lambda err: None)
