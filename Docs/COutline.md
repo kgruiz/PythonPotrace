@@ -1,6 +1,8 @@
 # Potrace C Code Documentation
 
+
 # Table of Contents
+
 
 - [Core](#core)
   - [main.c](#mainc)
@@ -149,6 +151,91 @@ struct info_s info;
 ```
 Global variable to store command-line options.
 
+### Macros
+#### `DIM_IN`
+```c
+#define DIM_IN (72)
+```
+Defines the number of points in an inch (72).
+
+#### `DIM_CM`
+```c
+#define DIM_CM (72 / 2.54)
+```
+Defines the number of points in a centimeter.
+
+#### `DIM_MM`
+```c
+#define DIM_MM (72 / 25.4)
+```
+Defines the number of points in a millimeter.
+
+#### `DIM_PT`
+```c
+#define DIM_PT (1)
+```
+Defines the number of points in a point (1).
+
+#### `DEFAULT_DIM`
+```c
+#ifdef USE_METRIC
+#define DEFAULT_DIM DIM_CM
+#else
+#define DEFAULT_DIM DIM_IN
+#endif
+```
+Defines the default dimension unit, either cm if `USE_METRIC` is defined or inches if it's not defined.
+
+#### `DEFAULT_DIM_NAME`
+```c
+#ifdef USE_METRIC
+#define DEFAULT_DIM_NAME "centimeters"
+#else
+#define DEFAULT_DIM_NAME "inches"
+#endif
+```
+Defines the name of the default dimension, either "centimeters" if `USE_METRIC` is defined or "inches" otherwise.
+
+#### `DEFAULT_PAPERWIDTH`
+```c
+#ifdef USE_A4
+#define DEFAULT_PAPERWIDTH 595
+#else
+#define DEFAULT_PAPERWIDTH 612
+#endif
+```
+Defines the default paper width, either A4 size if `USE_A4` is defined or letter size otherwise.
+
+#### `DEFAULT_PAPERHEIGHT`
+```c
+#ifdef USE_A4
+#define DEFAULT_PAPERHEIGHT 842
+#else
+#define DEFAULT_PAPERHEIGHT 792
+#endif
+```
+Defines the default paper height, either A4 size if `USE_A4` is defined or letter size otherwise.
+
+#### `DEFAULT_PAPERFORMAT`
+```c
+#ifdef USE_A4
+#define DEFAULT_PAPERFORMAT "a4"
+#else
+#define DEFAULT_PAPERFORMAT "letter"
+#endif
+```
+Defines the default paper format name, either "a4" if `USE_A4` is defined or "letter" otherwise.
+
+#### `DEFAULT_PROGRESS_BAR`
+```c
+#ifdef DUMB_TTY
+#define DEFAULT_PROGRESS_BAR progress_bar_simplified
+#else
+#define DEFAULT_PROGRESS_BAR progress_bar_vt100
+#endif
+```
+Defines the default progress bar type, simplified if `DUMB_TTY` is defined or vt100 otherwise.
+
 ### Helper Functions
 #### `backend_lookup`
 ```c
@@ -169,7 +256,7 @@ Prints a list of available backends to a file.
 - `j`: `int`, Current column number of text.
 - `linelen`: `int`, Max length before a newline is needed.
 **Returns:**
-`int`, Column cursor is left at (may include multiple lines if linelength is shorter than a line).
+`int`, Column cursor is left at (may include multiple lines if linelength is shorter than a line), representing the position where to continue writing next.
 
 #### `license`
 ```c
@@ -196,7 +283,7 @@ Prints usage information.
 ```c
 static dim_t parse_dimension(char *s, char **endptr);
 ```
-Parses a dimension string (e.g. "1.5in", "7cm") and returns dimension info.
+Parses a dimension string (e.g. "1.5in", "7cm"), and returns the value in points and optionally consumes units in the given string.
 - `s`: `char *`, Input dimension string.
 - `endptr`: `char **`, Pointer where to store the position in string after parsing
 **Returns**:
@@ -261,7 +348,7 @@ Opens a file for writing or returns stdout if no filename or `-` is provided.
 ```c
 static void my_fclose(FILE *f, const char *filename);
 ```
-Closes a file, but does nothing if filename is NULL or "-".
+Closes a file, but does nothing is filename is NULL or "-".
 - `f`: `FILE *`, The file to close.
 - `filename`: `const char *`, The name of file, or NULL or "-" to do nothing.
 
@@ -280,17 +367,17 @@ Creates a default output filename for input with a given extension.
 ```c
 static void calc_dimensions(imginfo_t *imginfo, potrace_path_t *plist);
 ```
-Calculates the dimensions of the output image and applies coordinate transformations.
-- `imginfo`: `imginfo_t *`, Image information to populate.
-- `plist`: `potrace_path_t *`, A list of path objects.
+Calculates the dimensions of the output based on command line and
+image dimensions, and optionally, based on the actual image outline.
+- `imginfo`: `imginfo_t *`, the struct to output transformation information to.
+- `plist`: `potrace_path_t *`, List of paths
 
 ### Input/Output
-
 #### `process_file`
 ```c
 static void process_file(backend_t *b, const char *infile, const char *outfile, FILE *fin, FILE *fout);
 ```
-Processes a single input file or stdin, and outputs data to a file, using a provided backend, including error handling.
+Processes a single file, containing one or more images, or stdin, performing tracing and writing the output to a file.
 - `b`: `backend_t *`, The backend to use for output.
 - `infile`: `const char *`, The name of the input file.
 - `outfile`: `const char *`, The name of the output file.
@@ -298,7 +385,6 @@ Processes a single input file or stdin, and outputs data to a file, using a prov
 - `fout`: `FILE *`, Output file descriptor.
 
 ### Main Function
-
 #### `main`
 ```c
 int main(int ac, char *av[]);
@@ -436,7 +522,6 @@ extern info_t info;
 An external global variable of type `info_t`, holding the parsed command-line options and settings, used for processing images throughout the Potrace application.
 
 ### Macros
-
 #### `DIM_IN`
 ```c
 #define DIM_IN (72)
@@ -598,14 +683,14 @@ Returns the library version as a string.
 
 
 ## File: potracelib.h
+```c
+This header file defines the public API for the core Potrace library. For a more
+   detailed description of the API, see potracelib.pdf
 ```
-This header file defines the public API for the core Potrace library. It declares structures for parameters, bitmaps, curves, and the overall tracing state, along with function prototypes for using the library.
-```
-
 ### Includes
 - None
 
-### Parameter Structures
+### Structures
 #### `potrace_progress_s`
 ```c
 struct potrace_progress_s {
@@ -641,7 +726,6 @@ Represents the parameters that configure the tracing behavior of Potrace.
 - `opttolerance`: `double`, Tolerance value for the curve optimization algorithm.
 - `progress`: `potrace_progress_t`, Progress monitoring settings.
 
-### Bitmap Structure
 #### `potrace_bitmap_s`
 ```c
 struct potrace_bitmap_s {
@@ -656,7 +740,6 @@ Represents a bitmap, storing its dimensions, scanline width and the raw pixel da
 - `dy`: `int`, Number of words (native word size) per scanline.
 - `map`: `potrace_word *`, Raw bit data for the bitmap.
 
-### Curve Structures
 #### `potrace_dpoint_s`
 ```c
 struct potrace_dpoint_s {
@@ -709,7 +792,6 @@ Represents a traced path, including its area, orientation, curve data, linked li
 - `sibling`: `struct potrace_path_s *`, Pointer to next path in tree structure at the same depth.
 - `priv`: `struct potrace_privpath_s *`, Pointer to the private path data structure used during path creation.
 
-### Potrace State Structure
 #### `potrace_state_s`
 ```c
 struct potrace_state_s {
@@ -721,24 +803,24 @@ struct potrace_state_s {
 ```
 Represents the overall state of Potrace processing.
 - `status`: `int`, Status of tracing operation, 0 indicates `POTRACE_STATUS_OK` and 1 indicates `POTRACE_STATUS_INCOMPLETE`
-- `plist`: `potrace_path_t *`, List of paths representing a trace of the bitmap image.
-- `priv`: `struct potrace_privstate_s *`, Pointer to internal data structure, currently unused.
+- `plist`: `potrace_path_t *`, vector data of extracted paths
+- `priv`: `struct potrace_privstate_s *`, private state
 
 ### API Functions
 #### `potrace_param_default`
 ```c
 potrace_param_t *potrace_param_default(void);
 ```
-Returns a pointer to a new set of Potrace parameters initialized with default values.
+Gets the default parameters for Potrace tracing.
 **Returns**:
-`potrace_param_t *`, A pointer to default parameters, or NULL on failure with errno set.
+`potrace_param_t *`, The Potrace default parameters, or `NULL` on error.
 
 #### `potrace_param_free`
 ```c
 void potrace_param_free(potrace_param_t *p);
 ```
 Frees the memory allocated for a set of Potrace parameters.
-- `p`: `potrace_param_t *`, A pointer to the parameters to free.
+- `p`: `potrace_param_t *`, The parameters to free.
 
 #### `potrace_trace`
 ```c
@@ -746,10 +828,10 @@ potrace_state_t *potrace_trace(const potrace_param_t *param,
 			       const potrace_bitmap_t *bm);
 ```
 Traces a bitmap image using the given parameters.
-- `param`: `const potrace_param_t *`, Tracing parameters.
-- `bm`: `const potrace_bitmap_t *`, The bitmap data to trace.
-**Returns:**
-`potrace_state_t *`, A pointer to the `potrace_state_t` object on success, or NULL on failure (with errno set). The status inside this object may indicate that the tracing process is incomplete due to error during curve optimization.
+- `param`: `const potrace_param_t *`, The tracing parameters.
+- `bm`: `const potrace_bitmap_t *`, The bitmap to be traced.
+**Returns**:
+`potrace_state_t *`, The Potrace tracing state object, or NULL on failure (with errno set). The status inside this object may indicate that the tracing process is incomplete due to error during curve optimization.
 
 #### `potrace_state_free`
 ```c
@@ -762,8 +844,9 @@ Frees all memory allocated for a Potrace state object.
 ```c
 const char *potrace_version(void);
 ```
-Returns the library version string.
-**Returns:**
+Returns a static plain text version string identifying this version
+   of potracelib
+**Returns**:
 `const char *`, The potracelib version string.
 
 
@@ -815,7 +898,15 @@ Stores the argument value of the matched option.
 ```c
 int optind = 1;
 ```
-Index in ARGV of the next element to be scanned. It is a shared variable between the caller and getopt. It is set to `1` before calling getopt for the first time, and is modified by getopt each call to it, so that getopt continues from the next ARGV-element from last call. It is also set by getopt after all options are processed to index of the first non option argument, or ARGV size + 1 if all ARGV-elements have been processed.
+Index in ARGV of the next element to be scanned. It is used for communication to and from the caller and for communication between successive calls to `getopt`.
+
+   On entry to `getopt`, zero means this is the first call; initialize.
+
+   When `getopt` returns -1, this is the index of the first of the
+   non-option elements that the caller should itself scan.
+
+   Otherwise, `optind` communicates from one call to the next
+   how much of ARGV has been scanned so far.
 
 #### `__getopt_initialized`
 ```c
@@ -828,19 +919,19 @@ A flag to check if the getopt function is initialized.
 static char *nextchar;
 ```
 The next char to be scanned in the option-element in which the last option character we returned was found.
-This allows us to pick up the scan where we left off.
+   This allows us to pick up the scan where we left off.
 
 #### `opterr`
 ```c
 int opterr = 1;
 ```
-Set to 0 to suppress error messages from getopt about unrecognized options.
+Set to 0 to suppress error messages from `getopt` about unrecognized options.
 
 #### `optopt`
 ```c
 int optopt = '?';
 ```
-Set to the option character which was unrecognized.
+Set to an option character which was unrecognized.
 
 #### `ordering`
 ```c
@@ -850,6 +941,33 @@ static enum
 } ordering;
 ```
 Describes how to deal with options that follow non-option ARGV-elements.
+
+   If the caller did not specify anything,
+   the default is REQUIRE_ORDER if the environment variable
+   POSIXLY_CORRECT is defined, PERMUTE otherwise.
+
+   REQUIRE_ORDER means don't recognize them as options;
+   stop option processing when the first non-option is seen.
+   This is what Unix does.
+   This mode of operation is selected by either setting the environment
+   variable POSIXLY_CORRECT, or using `+' as the first character
+   of the list of option characters.
+
+   PERMUTE is the default.  We permute the contents of ARGV as we scan,
+   so that eventually all the non-options are at the end.  This allows options
+   to be given in any order, even with programs that were not written to
+   expect this.
+
+   RETURN_IN_ORDER is an option available to programs that were written
+   to expect options and other ARGV-elements in any order and that care about
+   the ordering of the two.  We describe each non-option ARGV-element
+   as if it were the argument of an option with character code 1.
+   Using `-' as the first character of the list of option characters
+   selects this mode of operation.
+
+   The special argument `--' forces an end of option-scanning regardless
+   of the value of `ordering'.  In the case of RETURN_IN_ORDER, only
+   `--' can cause `getopt' to return -1 with `optind' != ARGC.
 
 #### `posixly_correct`
 ```c
@@ -934,12 +1052,49 @@ Initializes the internal getopt data before the first call.
 
 #### `_getopt_internal`
 ```c
-int _getopt_internal (int argc, char *const *argv, const char *optstring, const struct option *longopts, int *longind, int long_only);
+int _getopt_internal (int argc, char *const *argv, const char *shortopts,
+			     const struct option *longopts, int *longind,
+			     int long_only);
 ```
-The main implementation of `getopt` handling both short and long options.
+Scans elements of ARGV for option characters given in OPTSTRING.
+
+   If an element of ARGV starts with '-', and is not exactly "-" or "--",
+   then it is an option element.  The characters of this element
+   (aside from the initial '-') are option characters.  If `getopt'
+   is called repeatedly, it returns successively each of the option characters
+   from each of the option elements.
+
+   If there are no more option characters, `getopt' returns -1.
+   Then `optind' is the index in ARGV of the first ARGV-element
+   that is not an option.  (The ARGV-elements have been permuted
+   so that those that are not options now come last.)
+
+   OPTSTRING is a string containing the legitimate option characters.
+   If an option character is seen that is not listed in OPTSTRING,
+   return '?' after printing an error message.  If you set `opterr' to
+   zero, the error message is suppressed but we still return '?'.
+
+   If a char in OPTSTRING is followed by a colon, that means it wants an arg,
+   so the following text in the same ARGV-element, or the text of the following
+   ARGV-element, is returned in `optarg'.  Two colons mean an option that
+   wants an optional arg; if there is text in the current ARGV-element,
+   it is returned in `optarg', otherwise `optarg' is set to zero.
+
+   If OPTSTRING starts with `-' or `+', it requests different methods of
+   handling the non-option ARGV-elements.
+   See the comments about RETURN_IN_ORDER and REQUIRE_ORDER, above.
+
+   Long-named options begin with `--' instead of `-'.
+   Their names may be abbreviated as long as the abbreviation is unique
+   or is an exact match for some defined option.  If they have an
+   argument, it follows the option name in the same ARGV-element, separated
+   from the option name by a `=', or else the in next ARGV-element.
+   When `getopt' finds a long-named option, it returns 0 if that option's
+   `flag' field is nonzero, the value of the option's `val' field
+   if the `flag' field is zero.
 - `argc`: `int`, The number of command-line arguments.
 - `argv`: `char *const *`, An array of command-line argument strings.
-- `optstring`: `const char *`, A string of short option characters.
+- `shortopts`: `const char *`, A string of short option characters.
 - `longopts`: `const struct option *`, An array of `struct option` structs for long options.
 - `longind`: `int *`, A pointer to an integer that will hold the index of the matched long option, within longopts array, or it's set to NULL if no long option was matched.
 - `long_only`: `int`, If set to a value different than zero, allows a single dash to indicate a long option.
@@ -950,7 +1105,7 @@ The main implementation of `getopt` handling both short and long options.
 ```c
 int getopt (int argc, char *const *argv, const char *optstring);
 ```
-Parses command-line arguments, used for short option parsing.
+Parses command-line options, returning the option character and potentially setting `optarg`, reordering ARGV to place non-options after all options.
 - `argc`: `int`, The number of command-line arguments.
 - `argv`: `char *const *`, An array of command-line argument strings.
 - `optstring`: `const char *`, A string of short option characters.
@@ -1031,19 +1186,19 @@ Structure defining a long option for parsing command-line arguments.
 ### Constants
 #### `no_argument`
 ```c
-## define no_argument		0
+# define no_argument		0
 ```
 Indicates that an option does not accept an argument.
 
 #### `required_argument`
 ```c
-## define required_argument	1
+# define required_argument	1
 ```
 Indicates that an option requires an argument.
 
 #### `optional_argument`
 ```c
-## define optional_argument	2
+# define optional_argument	2
 ```
 Indicates that an option can accept an optional argument.
 
@@ -1070,7 +1225,7 @@ Set to 0 to suppress error messages from getopt about unrecognized options.
 ```c
 extern int optopt;
 ```
-Set to the option character that causes an error (unrecognized options).
+Set to an option character which was unrecognized.
 
 ### Functions
 #### `getopt`
@@ -1134,7 +1289,7 @@ extern int _getopt_internal (int argc, char *const *argv,
 			     int long_only);
 # endif
 ```
-Internal implementation for both `getopt_long` and `getopt_long_only` calls
+Internal only.  Users should not call this directly.
 - `argc`: `int`, The number of command-line arguments.
 - `argv`: `char *const *`, An array of command-line argument strings.
 - `shortopts`: `const char *`, A string of short option characters.
@@ -1178,19 +1333,19 @@ Structure defining a long option for parsing command-line arguments.
 ### Constants
 #### `no_argument`
 ```c
-## define no_argument		0
+# define no_argument		0
 ```
 Indicates that an option does not accept an argument.
 
 #### `required_argument`
 ```c
-## define required_argument	1
+# define required_argument	1
 ```
 Indicates that an option requires an argument.
 
 #### `optional_argument`
 ```c
-## define optional_argument	2
+# define optional_argument	2
 ```
 Indicates that an option can accept an optional argument.
 
@@ -1217,7 +1372,7 @@ Set to 0 to suppress error messages from getopt about unrecognized options.
 ```c
 extern int optopt;
 ```
-Set to the option character that causes an error (unrecognized options).
+Set to an option character which was unrecognized.
 
 ### Functions
 #### `getopt`
@@ -1281,7 +1436,7 @@ extern int _getopt_internal (int argc, char *const *argv,
 			     int long_only);
 # endif
 ```
-Internal implementation for both `getopt_long` and `getopt_long_only` calls
+Internal only.  Users should not call this directly.
 - `argc`: `int`, The number of command-line arguments.
 - `argv`: `char *const *`, An array of command-line argument strings.
 - `shortopts`: `const char *`, A string of short option characters.
@@ -1570,35 +1725,36 @@ Finds the extreme values of a given path, with respect to an associated directio
 This header file defines data structures, and operations for bit-maps, mainly by using access macros, and helper function for allocation and deallocation.
 ```
 ### Includes
-- `string.h`: String handling functions
-- `stdlib.h`: Standard memory allocation functions
-- `errno.h`: Error number definitions.
-- `stddef.h`: For definitions of `ptrdiff_t`.
-- `potracelib.h`: Core Potrace library definitions.
+- `stdio.h`: For standard input/output functions.
+- `bitmap.h`: For definitions of functions that handle bitmap operations
+- `stdlib.h`: For standard memory allocation functions.
+- `errno.h`: For error number definitions.
+- `stddef.h`: For definitions like `ptrdiff_t`.
+- `potracelib.h`: For definition of potrace_word and other core structures.
 
 ### Macros
 #### Bitmap Dimension Macros
-- `BM_WORDSIZE`: size of `potrace_word` type in bytes
-- `BM_WORDBITS`: size of `potrace_word` type in bits
-- `BM_HIBIT`: A bitmask to check the highest bit of a `potrace_word`
+- `BM_WORDSIZE`: The size in bytes for potrace_word
+- `BM_WORDBITS`: The size in bits for potrace_word
+- `BM_HIBIT`: A bitmask with only the highest bit set in a potrace_word
 - `BM_ALLBITS`: A bitmask where all bits are set.
 
 #### Access Macros
-- `bm_scanline(bm, y)`: Gets pointer to start of the y-th scanline of a given bitmap
-- `bm_index(bm, x, y)`: Gets pointer to the word containing the pixel (x,y)
-- `bm_mask(x)`: Gets the bit mask needed to access bit at column x
-- `bm_range(x, a)`: Checks if a given index x is within the given boundary a
-- `bm_safe(bm, x, y)`: Checks if coordinates (x, y) are inside the bounds of the given bitmap
-- `BM_UGET(bm, x, y)`: Gets the value of the specified bit of a bitmap, without bounds checking
-- `BM_USET(bm, x, y)`: Set the specified bit of a bitmap, without bounds checking
-- `BM_UCLR(bm, x, y)`: Clears the specified bit of a bitmap, without bounds checking
-- `BM_UINV(bm, x, y)`: Inverts the specified bit of a bitmap, without bounds checking
-- `BM_UPUT(bm, x, y, b)`: Sets the value of a bit to the specified value, without bounds checking
-- `BM_GET(bm, x, y)`: Gets the value of the specified bit of a bitmap, with bounds checking
-- `BM_SET(bm, x, y)`: Sets the specified bit of a bitmap, with bounds checking
-- `BM_CLR(bm, x, y)`: Clears the specified bit of a bitmap, with bounds checking
-- `BM_INV(bm, x, y)`: Inverts the specified bit of a bitmap, with bounds checking
-- `BM_PUT(bm, x, y, b)`: Sets the value of a bit to the specified value with bounds checking
+- `bm_scanline(bm, y)`: Gets pointer to start of the y-th scanline of a given bitmap.
+- `bm_index(bm, x, y)`: Gets pointer to the word containing the pixel (x,y).
+- `bm_mask(x)`: Gets the bit mask needed to access bit at column x.
+- `bm_range(x, a)`: Checks if a given index x is within the given boundary a.
+- `bm_safe(bm, x, y)`: Checks if coordinates (x, y) are inside the bounds of the given bitmap.
+- `BM_UGET(bm, x, y)`: Gets the value of the specified bit of a bitmap, without bounds checking, Returns 1 if set, otherwise 0.
+- `BM_USET(bm, x, y)`: Sets the specified bit of a bitmap, without bounds checking.
+- `BM_UCLR(bm, x, y)`: Clears the specified bit of a bitmap, without bounds checking.
+- `BM_UINV(bm, x, y)`: Inverts the specified bit of a bitmap, without bounds checking.
+- `BM_UPUT(bm, x, y, b)`: Sets the value of a bit to the specified value, without bounds checking. `b` should be 0 or 1.
+- `BM_GET(bm, x, y)`: Gets the value of the specified bit of a bitmap, with bounds checking. Returns 1 if set, otherwise 0.
+- `BM_SET(bm, x, y)`: Sets the specified bit of a bitmap, with bounds checking.
+- `BM_CLR(bm, x, y)`: Clears the specified bit of a bitmap, with bounds checking.
+- `BM_INV(bm, x, y)`: Inverts the specified bit of a bitmap, with bounds checking.
+- `BM_PUT(bm, x, y, b)`: Sets the value of a bit to the specified value with bounds checking. `b` should be 0 or 1.
 
 ### Functions
 #### `getsize`
@@ -1617,14 +1773,14 @@ static inline ptrdiff_t bm_size(const potrace_bitmap_t *bm);
 ```
 Gets the memory size required for a bitmap.
 - `bm`: `const potrace_bitmap_t *`, The bitmap to get the size of
-**Returns**:
+**Returns:**
 `ptrdiff_t`, Returns size in bytes of bitmap memory, or -1 if size is too large and overflows `ptrdiff_t`
 
 #### `bm_base`
 ```c
 static inline potrace_word *bm_base(const potrace_bitmap_t *bm);
 ```
-Gets the base pointer to the bitmap data
+Gets the base pointer to the bitmap data.
 - `bm`: `const potrace_bitmap_t *`, The bitmap to get base address from.
 **Returns:**
 `potrace_word *`, The base address of the bitmap data, considering the direction of scanlines
@@ -1640,52 +1796,52 @@ Frees the memory occupied by a bitmap.
 ```c
 static inline potrace_bitmap_t *bm_new(int w, int h);
 ```
-Creates a new uninitialized bitmap, and allocates all the resources.
-- `w`: `int`, The width of the new bitmap.
-- `h`: `int`, The height of the new bitmap.
-**Returns:**
-`potrace_bitmap_t *`, Pointer to a bitmap, or NULL on error with errno set
+Return new uninitialized bitmap.
+- `w`: `int`, width of bitmap
+- `h`: `int`, height of bitmap
+**Returns**:
+`potrace_bitmap_t *`, returns pointer to allocated bitmap, NULL with errno on error.
 
 #### `bm_clear`
 ```c
 static inline void bm_clear(potrace_bitmap_t *bm, int c);
 ```
-Clears the bitmap.
-- `bm`: `potrace_bitmap_t *`, The bitmap object.
-- `c`: `int`, Bit value (0 or 1) to set on the bitmap.
+Clear the given bitmap. Set all bits to c
+- `bm`: `potrace_bitmap_t *`, The bitmap to be cleared.
+- `c`: `int`, Bit value to set.
 
 #### `bm_dup`
 ```c
 static inline potrace_bitmap_t *bm_dup(const potrace_bitmap_t *bm);
 ```
-Creates a duplicate bitmap by deep-copying the data of provided bitmap.
-- `bm`: `const potrace_bitmap_t *`, The bitmap object to copy.
-**Returns:**
-`potrace_bitmap_t *`, pointer to the new bitmap. Returns NULL if memory allocation fails.
+Duplicate the given bitmap.
+- `bm`: `const potrace_bitmap_t *`, Bitmap to be duplicated
+**Returns**:
+`potrace_bitmap_t *`, return the duplicated bitmap object, or NULL on error with errno set
 
 #### `bm_invert`
 ```c
 static inline void bm_invert(potrace_bitmap_t *bm);
 ```
-Inverts the bit values in the given bitmap object.
-- `bm`: `potrace_bitmap_t *`, The bitmap object to be inverted.
+Invert the given bitmap.
+- `bm`: `potrace_bitmap_t *`, The bitmap to be inverted
 
 #### `bm_flip`
 ```c
 static inline void bm_flip(potrace_bitmap_t *bm);
 ```
-Flips the bitmap in the vertical direction (switches from top down to bottom up or viseversa)
-- `bm`: `potrace_bitmap_t *`, The bitmap object to flip.
+Turn the given bitmap upside down
+- `bm`: `potrace_bitmap_t *`, The bitmap to be flipped
 
 #### `bm_resize`
 ```c
 static inline int bm_resize(potrace_bitmap_t *bm, int h);
 ```
-Resizes bitmap, preserving bottom or top alignment depending on sign of `dy`.
-- `bm`: `potrace_bitmap_t *`, Bitmap object to be resized.
-- `h`: `int`, The new bitmap height
-**Returns:**
-`int`, 0 on success or 1 on failure with errno set
+Resize the bitmap to the given new height
+- `bm`: `potrace_bitmap_t *`, bitmap to be resized
+- `h`: `int`, new height of the bitmap
+**Returns**:
+`int`, 0 on success, 1 on failure with errno set
 
 
 ## File: bitmap_io.h
@@ -1877,6 +2033,13 @@ Reads bytes from the file until the file position is at the position specified b
 - `pos`: `int`, target file position
 **Returns:**
 `int`, 1 on EOF or error, otherwise 0
+
+### Local Variables
+#### `col1`
+```c
+static int col1[2];
+```
+An array that will be used to store color information in old style OS/2 bitmaps where color table is present.
 
 
 ## File: curve.h
@@ -2436,7 +2599,7 @@ Calculates a point on the Bezier curve defined by the four control points.
 ```c
 static double tangent(dpoint_t p0, dpoint_t p1, dpoint_t p2, dpoint_t p3, dpoint_t q0, dpoint_t q1);
 ```
-Finds a tangent point t in [0,1] of the bezier curve (p0, p1, p2, p3) relative to vector (q1-q0) .
+Calculates tangent on a bezier curve by finding the point in [0,1] on the Bezier curve where it is tangent to the vector (q1-q0).
 - `p0`: `dpoint_t`, The first bezier curve control point.
 - `p1`: `dpoint_t`, The second bezier curve control point.
 - `p2`: `dpoint_t`, The third bezier curve control point.
@@ -2517,7 +2680,6 @@ Smooths a curve by calculating and adjusting control points, and identify corner
 - `alphamax`: `double`, Threshold value for corner detection.
 
 ### Stage 5 - Curve Optimization Functions
-
 #### `opti_s`
 ```c
 struct opti_s {
@@ -2554,9 +2716,9 @@ static int opticurve(privpath_t *pp, double opttolerance);
 ```
 Optimizes the curve of a path to reduce the number of Bezier segments using a given tolerance.
 - `pp`: `privpath_t *`, The path data.
-- `opttolerance`: `double`, Tolerance parameter for curve optimization.
+- `opttolerance`: `double`, Tolerance value for curve optimization.
 **Returns**:
-`int`, 0 on success, 1 on failure with errno set.
+`int`, 0 on success, 1 with errno set on failure.
 
 ### Top Level Functions
 
@@ -2568,7 +2730,6 @@ Processes the path, calling the relevant functions to calculate sums, longest su
 - `plist`: `path_t *`, The linked list of paths.
 - `param`: `const potrace_param_t *`, The parameters for the path processing.
 - `progress`: `progress_t *`, Progress bar struct to update,
-
 **Returns**:
 `int`, 0 on success, 1 on error with errno set.
 
@@ -3042,6 +3203,10 @@ struct progress_bar_s {
 ```
 Defines the structure for representing a progress bar interface.
 - `init`: `int (*)(potrace_progress_t *prog, const char *filename, int count)`, Function to initialize the progress bar.
+    -`prog`: `potrace_progress_t *`, The progress bar object.
+    -`filename`: `const char *`, The name of the input file that is to be processed.
+    -`count`: `int`, A number representing what is the index of file being processed when processing more than one file
+    **Returns**: `int`, return `0` on success, `1` on error with errno set.
 - `term`: `void (*)(potrace_progress_t *prog)`, Function to terminate/clean-up the progress bar.
 
 ### Global Variables
@@ -3309,7 +3474,7 @@ struct lzw_state_s {
 Represents the state of the LZW compression algorithm, holding both dictionary and output state.
 - `n`: `int`, Current dictionary size.
 - `d`: `lzw_dict_t *`, Pointer to the root of the LZW dictionary
-- `s`: `lzw_dict_t *`,  Pointer to the current string being built in the LZW dictionary, or NULL if not in progress
+- `s`: `lzw_dict_t *`,  Pointer to current string, or NULL at beginning.
 - `buf`: `BITBUF_TYPE`, The bit buffer for pending output bits.
 - `bufsize`: `int`, The current number of bits in buffer.
 - `eod`: `int`, A flag indicating if the end of data marker has been reached and the buffer needs to be flushed.
@@ -3319,67 +3484,71 @@ Represents the state of the LZW compression algorithm, holding both dictionary a
 ```c
 static void lzw_free_dict(lzw_dict_t *s);
 ```
-Recursively frees an `lzw_dict_t` object, including its children.
-- `s`: `lzw_dict_t *`, The dictionary node to be freed.
+Recursively free an lzw_dict_t object.
+- `s`: `lzw_dict_t *`, dictionary node to free
 
 #### `lzw_clear_table`
 ```c
 static void lzw_clear_table(lzw_state_t *st);
 ```
-Re-initializes the dictionary state to "newdict", clearing any old dictionary.
-- `st`: `lzw_state_t *`, The lzw state object whose dictionary is to be cleared.
+Re-initialize the lzw state's dictionary state to "newdict", freeing any old dictionary.
+- `st`: `lzw_state_t *`, The LZW state object to clear
 
 #### `lzw_emit`
 ```c
 static inline void lzw_emit(unsigned int code, lzw_state_t *st);
 ```
-Writes a code to the bit buffer, updating internal parameters as appropriate.
-- `code`: `unsigned int`, The code to be written.
-- `st`: `lzw_state_t *`, The LZW compression state.
+Write code to bit buffer. Precondition st->bufsize <= 7.
+- `code`: `unsigned int`, Code to emit
+- `st`: `lzw_state_t *`, LZW state object
 
 #### `lzw_read_bitbuf`
 ```c
 static inline void lzw_read_bitbuf(lzw_stream_t *s);
 ```
-Transfers one byte from the bit buffer to the output buffer.
-- `s`: `lzw_stream_t *`, The LZW stream to which the output should be written.
+Transfer one byte from bit buffer to output. Precondition:
+   s->avail_out > 0
+- `s`: `lzw_stream_t *`, LZW output stream.
 
 ### State Machine Functions
 #### `lzw_encode_char`
 ```c
 static int lzw_encode_char(lzw_state_t *st, char c);
 ```
-Performs a single state transition of the LZW state machine. Updates the dictionary state and writes to the bit buffer.
-- `st`: `lzw_state_t *`, The current LZW compression state.
-- `c`: `char`, The input character to be encoded.
-**Returns**:
-`int`, Returns 0 on success or 1 on error with errno set.
+Perform state transition of the state st on input character ch. Updates the dictionary state and/or writes to the bit buffer. Precondition: st->bufsize <= 7.
+- `st`: `lzw_state_t *`, Current LZW state.
+- `c`: `char`, character to be processed.
+**Returns:**
+`int`, returns 0 on success, or 1 on error with errno set
 
 #### `lzw_encode_eod`
 ```c
 static void lzw_encode_eod(lzw_state_t *st);
 ```
-Performs a state transition of the state st on input EOD (end of data). The dictionary state becomes undefined and writes to the bit buffer.
-- `st`: `lzw_state_t *`, The current LZW compression state.
+Perform state transition of the state st on input EOD.  The leaves
+   the dictionary state undefined and writes to the bit buffer.
+   Precondition: st->bufsize <= 7. This function must be called
+   exactly once, at the end of the stream
+- `st`: `lzw_state_t *`, current LZW state.
 
 ### User Visible Functions
 #### `lzw_init`
 ```c
 lzw_stream_t *lzw_init(void);
 ```
-Initializes the LZW compression state.
-**Returns**:
-`lzw_stream_t *`, a pointer to the initialized LZW stream, or NULL on error with errno set.
+Initializes the lzw state, and returns the stream object to be used by compress function
+**Returns:**
+`lzw_stream_t *`, A pointer to the new LZW stream, or NULL on error with errno set.
 
 #### `lzw_compress`
 ```c
 int lzw_compress(lzw_stream_t *s, int mode);
 ```
-Compresses the provided input buffer data.
+Compresses data using LZW algorithm and writes to the output buffer
 - `s`: `lzw_stream_t *`, The LZW compression stream.
-- `mode`: `int`, The compression mode (LZW_NORMAL or LZW_EOD).
+- `mode`: `int`, The LZW mode (LZW_NORMAL or LZW_EOD).
 **Returns**:
-`int`, 0 on success or 1 on error with errno set.
+`int`, 0 on success, or 1 on error with errno set
 
 #### `lzw_free`
 ```c
@@ -3490,7 +3659,7 @@ Ships data to a file without any encoding, directly copying bytes to output stre
 - `s`: `const char *`, input data buffer.
 - `len`: `int`, number of bytes to ship.
 **Returns:**
-`int`, The number of characters written
+`int`, The number of characters written.
 
 #### `pdf_xship`
 ```c
@@ -3502,7 +3671,7 @@ Ships data to a file and optionally compresses using zlib. Used for PDF document
 - `s`: `const char *`, Input data buffer.
 - `len`: `int`, Number of bytes to ship
 **Returns:**
-`int`, The number of characters written
+`int`, The number of characters written.
 
 #### `flate_xship`
 ```c
@@ -3513,7 +3682,7 @@ Ships data to a file, optionally compressing the data using zlib's flate algorit
 - `filter`: `int`, If 1 data will be compressed with ASCII85 encoding, if 0 data will be written without changes.
 - `s`: `const char *`, The data to output to file.
 - `len`: `int`, Number of bytes to ship.
-**Returns**:
+**Returns:**
 `int`, The number of characters written to file.
 
 #### `lzw_xship`
@@ -3532,7 +3701,7 @@ Ships data to a file, optionally using LZW compression, encoded to ASCII85.
 ```c
 int a85_xship(FILE *f, int filter, const char *s, int len);
 ```
-Ships data to a file using ASCII85 encoding
+Ships data to a file using a85 encoding only.
 - `f`: `FILE *`, Output file stream.
 - `filter`: `int`, If 1 data is encoded using ASCII85, otherwise raw data is output
 - `s`: `const char *`, data to be shipped.
@@ -3545,19 +3714,19 @@ Ships data to a file using ASCII85 encoding
 ```c
 static int a85init(FILE *f);
 ```
-Initializes the ASCII85 encoder
-- `f`: `FILE *`, output stream
+Initializes the ASCII85 encoder.
+- `f`: `FILE *`, Output stream.
 **Returns:**
-`int`, Always return 0
+`int`, Always returns 0
 
 #### `a85finish`
 ```c
 static int a85finish(FILE *f);
 ```
 Finishes ASCII85 encoding by padding the rest of the buffer.
-- `f`: `FILE *`, output stream
+- `f`: `FILE *`, Output stream
 **Returns:**
-`int`, The number of chars written
+`int`, The number of characters written.
 
 #### `a85write`
 ```c
@@ -3575,7 +3744,7 @@ Write to buffer and encode using ASCII85, calling `a85out` if buffer is full.
 static int a85out(FILE *f, int n);
 ```
 Encodes the stored buffer, and sends it to the specified file descriptor.
-- `f`: `FILE *`, Output stream to write to
+- `f`: `FILE *`, Output stream to write to.
 - `n`: `int`, Number of bytes in buffer.
 **Returns**:
 `int`, The number of bytes written.
@@ -3588,7 +3757,7 @@ Spools one character to the output stream, adding newlines if column is longer t
 - `f`: `FILE *`, Output file stream
 - `c`: `char`, Character to write to stream
 **Returns**:
-`int`, Number of characters written to file (including line breaks)
+`int`, Number of characters written to file (including line breaks).
 
 
 ## File: render.h
@@ -3609,14 +3778,14 @@ struct render_s {
   int *incrow_buf;
 };
 ```
-Structure representing render state
+Represents the state for the rendering process.
 - `gm`: `greymap_t *`, The greyscale image that we render into.
 - `x0`, `y0`: `double`, previous initial coordinates in floating point
 - `x1`, `y1`: `double`, current coordinates in floating point
 - `x0i`, `y0i`: `int`, integer part of the previous initial coordinates
 - `x1i`, `y1i`: `int`, integer part of the current coordinates
 - `a0`, `a1`: `double`, floating point accumulators for changes in color
-- `incrow_buf`: `int *`, array to batch operations on rows
+- `incrow_buf`: `int *`, Buffer used to cache changes for the rows, to be applied at a later point.
 
 ### Functions
 #### `render_new`
@@ -3653,7 +3822,7 @@ Sets the current position, starting a new path.
 
 #### `render_lineto`
 ```c
-void render_lineto(render_t *rm, double x2, double y2);
+void render_lineto(render_t *rm, double x, double y);
 ```
 Draws a straight line from the current position to a new position.
 - `rm`: `render_t *`, The rendering state object.
@@ -3824,8 +3993,8 @@ Represents a coordinate transformation, storing bounding box, origin, basis vect
 - `orig`: `double[2]`, Origin of the transformation relative to the bounding box.
 - `x`: `double[2]`, Basis vector for the x-direction.
 - `y`: `double[2]`, Basis vector for the y-direction.
-- `scalex`: `double`, Scaling factor in x-direction, redundant information.
-- `scaley`: `double`, Scaling factor in y-direction, redundant information.
+-  `scalex`: `double`, Scaling factor in x-direction.
+- `scaley`: `double`, Scaling factor in y-direction.
 
 ### Functions
 #### `trans`
@@ -3842,7 +4011,9 @@ Applies a coordinate transformation to a point.
 ```c
 void trans_rotate(trans_t *r, double alpha);
 ```
-Rotates the coordinate system counterclockwise by `alpha` degrees.
+Rotates the coordinate system counterclockwise by alpha degrees. The
+   new bounding box will be the smallest box containing the rotated
+   old bounding box
 - `r`: `trans_t *`, Pointer to transformation data.
 - `alpha`: `double`, Rotation angle in degrees.
 
@@ -3850,7 +4021,7 @@ Rotates the coordinate system counterclockwise by `alpha` degrees.
 ```c
 void trans_from_rect(trans_t *r, double w, double h);
 ```
-Initializes a coordinate transformation to represent a rectangle.
+Return the standard cartesian coordinate system for an w x h rectangle.
 - `r`: `trans_t *`, Pointer to transformation data.
 - `w`: `double`, Width of the rectangle.
 - `h`: `double`, Height of the rectangle.
@@ -3859,7 +4030,7 @@ Initializes a coordinate transformation to represent a rectangle.
 ```c
 void trans_rescale(trans_t *r, double sc);
 ```
-Rescales a coordinate system.
+Rescale the coordinate system r by factor sc >= 0.
 - `r`: `trans_t *`, Pointer to the transformation data.
 - `sc`: `double`, Scaling factor.
 
@@ -3867,7 +4038,7 @@ Rescales a coordinate system.
 ```c
 void trans_scale_to_size(trans_t *r, double w, double h);
 ```
-Rescales the coordinate system to the target size.
+Rescale the coordinate system to size w x h
 - `r`: `trans_t *`, Pointer to the transformation data.
 - `w`: `double`, Target width.
 - `h`: `double`, Target height.
@@ -3876,9 +4047,9 @@ Rescales the coordinate system to the target size.
 ```c
 void trans_tighten(trans_t *r, potrace_path_t *plist);
 ```
-Adjusts a bounding box to fit vector outlines.
-- `r`: `trans_t *`, Transformation data to be adjusted.
-- `plist`: `potrace_path_t *`, Linked list of paths to fit.
+Adjusts the bounding box to the actual vector outline.
+- `r`: `trans_t *`, The transformation data to be adjusted.
+- `plist`: `potrace_path_t *`, The list of path to determine boundaries.
 
 
 ## File: trans.c
@@ -4373,6 +4544,9 @@ Prints a simple text representation of a greyscale image.
 # Backends (Output Formats)
 
 
+# Backends (Output Formats)
+
+
 ## File: backend_eps.h
 ```
 This header file defines the interface for the PostScript (EPS) backend of Potrace, including functions for initialization, output of paths, and finalization.
@@ -4805,7 +4979,7 @@ Outputs Potrace paths as an Encapsulated PostScript document.
 
 ## File: backend_pdf.h
 ```
-This header file declares functions for the PDF backend, used for generating PDF documents with optional compression. It provides prototypes for initialization, handling individual pages, and finalization.
+This header file defines functions for the PDF backend, used for generating PDF documents with optional compression. It provides prototypes for initialization, handling individual pages, and finalization.
 ```
 ### Includes
 - `potracelib.h`: Core Potrace library definitions.
@@ -4819,7 +4993,7 @@ int init_pdf(FILE *fout);
 Initializes a PDF document, writing the initial header information.
 - `fout`: `FILE *`, Output file descriptor.
 **Returns**:
-`int`, Returns 0 on success, or 1 on error with errno set
+`int`, Returns 0 on success, or 1 on error with errno set.
 
 #### `page_pdf`
 ```c
@@ -4827,10 +5001,10 @@ int page_pdf(FILE *fout, potrace_path_t *plist, imginfo_t *imginfo);
 ```
 Outputs a single PDF page using the given path data and image info.
 - `fout`: `FILE *`, Output file descriptor.
-- `plist`: `potrace_path_t *`, List of paths that represents object of interest.
-- `imginfo`: `imginfo_t *`, image informations such as image dimensions and margins.
+- `plist`: `potrace_path_t *`, The linked list of paths for rendering.
+- `imginfo`: `imginfo_t *`, Image related information.
 **Returns**:
-`int`, Returns 0 on success or 1 on error with errno set.
+`int`, Returns 0 on success, or 1 on error with errno set
 
 #### `term_pdf`
 ```c
@@ -4850,7 +5024,7 @@ Outputs Potrace paths as a single page PDF document.
 - `plist`: `potrace_path_t *`, linked list of paths that represents object of interest.
 - `imginfo`: `imginfo_t *`, image informations such as image dimensions and margins
 **Returns**:
-`int`, returns 0 on success or 1 on error with errno set.
+`int`, returns 0 on success, or 1 on error with errno set.
 
 #### `page_pdfpage`
 ```c
@@ -4861,7 +5035,7 @@ Outputs Potrace paths as a single page in a PDF document with defined page size.
 - `plist`: `potrace_path_t *`, linked list of paths that represents object of interest.
 - `imginfo`: `imginfo_t *`, image informations such as image dimensions and margins
 **Returns:**
-`int`, Returns 0 on success or 1 on error with errno set
+`int`, Returns 0 on success or 1 on error with errno set.
 
 
 ## File: backend_pdf.c
@@ -5169,6 +5343,8 @@ Generates a PGM image from the provided paths.
 - `fout`: `FILE *`, output file descriptor.
 - `plist`: `potrace_path_t *`, List of paths to convert to a greyscale image
 - `imginfo`: `imginfo_t *`, Data about the source image, such as dimensions and margins.
+**Returns:**
+`int`, 0 on success or a non-zero number on error with errno set.
 
 
 ## File: backend_pgm.c
@@ -5245,7 +5421,7 @@ This file implements the SVG backend for Potrace, responsible for generating Sca
 ```
 ### Includes
 - `config.h` (conditional): Provides configuration defines.
-- `stdio.h`: Standard input/output functions.
+- `stdio.h`: For standard input/output functions.
 - `stdarg.h`: For variable arguments list.
 - `string.h`: For string functions.
 - `math.h`: For math functions.
@@ -5267,88 +5443,167 @@ Calculates a point on a 1-dimensional Bezier segment for curve approximation.
 - `x1`: `double`, The first control point.
 - `x2`: `double`, The second control point.
 - `x3`: `double`, The end point.
-**Returns**:
+**Returns:**
 `double`, the interpolated point along the bezier curve.
 
 #### `round_to_unit`
 ```c
 static char *round_to_unit(double x);
 ```
-Formats the given double to a string with the current format specification.
+Formats the given double to a string, using a pre-determined format.
+   Returns one of a small number of statically allocated strings.
 - `x`: `double`, The value to format.
 **Returns:**
-`char *`, The formatted string, returned from a small statically allocated array.
+`char *`, One of a small number of statically allocated strings, containing the formatted representation of the input.
 
 #### `set_format`
 ```c
 static void set_format(trans_t tr);
 ```
-Sets formatting options, based on scaling and unit values.
-- `tr`: `trans_t`, Transformation parameters for extracting scaling factors.
+Selects a print format for floating point numbers, appropriate for the given scaling and info.unit. Note: the format must be so that the resulting number fits into a buffer of size 100.
+- `tr`: `trans_t`, The transformation data, used to determine the scale factor to create the format string
 
-### Path Drawing Functions
-#### `geojson_moveto`
+### Path-drawing auxiliary functions
+#### `shiptoken`
 ```c
-static void geojson_moveto(FILE *fout, dpoint_t p, trans_t tr);
+static void shiptoken(FILE *fout, const char *token);
 ```
-Outputs a "moveto" command to the given file for an SVG output
-- `fout`: `FILE *`, File to output to
-- `p`: `dpoint_t`, The coordinates of the move operation
-- `tr`: `trans_t`, The transformation data
+Writes a token to the file, updating the column and newline status.
+- `fout`: `FILE *`, the output file stream.
+- `token`: `const char *`, the string token to be output
+**Returns:**
+`void`, this function does not return any value
+#### Local variables in shiptoken
+- `c`: `int`, Size of the string to write
+- `column`: `static int`, position of last output in row, tracked for newline purposes.
+- `newline`: `static int`, A flag to indicate if output should start at the next row or not
 
-#### `geojson_lineto`
+#### `ship`
 ```c
-static void geojson_lineto(FILE *fout, dpoint_t p, trans_t tr);
+static void ship(FILE *fout, const char *fmt, ...);
 ```
-Outputs a "lineto" command to the given file for an SVG output.
-- `fout`: `FILE *`, File to output to
-- `p`: `dpoint_t`, The coordinates of the draw to operation
-- `tr`: `trans_t`, The transformation data
+Writes a formatted string to a file, breaking long lines using shiptoken.
+- `fout`: `FILE *`, The output file stream.
+- `fmt`: `const char *`, The format string to use.
+- `...`: Variable arguments corresponding to format string.
+**Returns:**
+`void`, this function does not return any value
+#### Local variables in `ship`
+- `buf`: `static char[]`, Statically allocated character array for creating format string
+- `p`, `q`:  `char *`, temporary pointers for string parsing
 
-#### `geojson_curveto`
+#### `svg_moveto`
 ```c
-static void geojson_curveto(FILE *fout, dpoint_t p1, dpoint_t p2, dpoint_t p3, trans_t tr);
+static void svg_moveto(FILE *fout, dpoint_t p);
 ```
-Simulates a curve-to command, approximating a Bezier curve with short lines, for geojson output.
-- `fout`: `FILE *`, File to output to
-- `p1`: `dpoint_t`, Coordinates of first control point of Bezier curve.
-- `p2`: `dpoint_t`, Coordinates of second control point of Bezier curve.
-- `p3`: `dpoint_t`, End point of Bezier curve.
-- `tr`: `trans_t`, The transformation data
+Writes a SVG "moveto" command, moving the current cursor, to the specified location.
+- `fout`: `FILE *`, The output file stream.
+- `p`: `dpoint_t`, The coordinates of the move operation.
+**Returns:**
+`void`, this function does not return any value
+
+#### `svg_rmoveto`
+```c
+static void svg_rmoveto(FILE *fout, dpoint_t p);
+```
+Writes a SVG relative "moveto" command, moving the current cursor, by a specified offset.
+- `fout`: `FILE *`, The output file stream.
+- `p`: `dpoint_t`, The coordinates of the move operation relative to the current location
+**Returns:**
+`void`, this function does not return any value
+
+#### `svg_lineto`
+```c
+static void svg_lineto(FILE *fout, dpoint_t p);
+```
+Writes a SVG relative "lineto" command from the current point to the specified point.
+- `fout`: `FILE *`, The output file stream.
+- `p`: `dpoint_t`, The coordinates of the draw to operation relative to the current position
+**Returns:**
+`void`, this function does not return any value
+
+#### `svg_curveto`
+```c
+static void svg_curveto(FILE *fout, dpoint_t p1, dpoint_t p2, dpoint_t p3);
+```
+Writes a relative SVG "curveto" command, drawing a Bezier curve with control points.
+- `fout`: `FILE *`, The output file stream.
+- `p1`: `dpoint_t`, The first Bezier control point, relative to current location
+- `p2`: `dpoint_t`, The second Bezier control point, relative to current location
+- `p3`: `dpoint_t`, The end point of the Bezier curve, relative to current location.
+**Returns:**
+`void`, this function does not return any value
 
 ### Path Conversion
-#### `geojson_path`
+#### `svg_path`
 ```c
-static int geojson_path(FILE *fout, potrace_curve_t *curve, trans_t tr);
+static int svg_path(FILE *fout, potrace_curve_t *curve, int abs);
 ```
-Converts a `potrace_curve_t` object into a GeoJSON polygon coordinate array format.
-- `fout`: `FILE *`, Output file stream.
-- `curve`: `potrace_curve_t *`, The curve object to convert
-- `tr`: `trans_t`, The coordinate transformation settings.
+Converts a `potrace_curve_t` object to an SVG path element with absolute or relative positions.
+- `fout`: `FILE *`, output file descriptor.
+- `curve`: `potrace_curve_t *`, The curve to be output
+- `abs`: `int`, If set to 1 the path starts at absolute position, otherwise a relative move command is issued.
 **Returns:**
-`int` 0 on success
+`int`, 0 if path was successfully written
 
-#### `write_polygons`
+#### `svg_jaggy_path`
 ```c
-static void write_polygons(FILE *fout, potrace_path_t *tree, trans_t tr, int first);
+static int svg_jaggy_path(FILE *fout, point_t *pt, int n, int abs);
 ```
-Recursively writes a tree of `potrace_path_t` into a GeoJSON structure
-- `fout`: `FILE *`, Output file stream
-- `tree`: `potrace_path_t *`, List of path items representing a tree
-- `tr`: `trans_t`, Transformation to apply to points
-- `first`: `int`, Whether it is first path (no leading comma)
+Outputs a jagged path, for debugging purposes only, where each node is connected by a straight line.
+- `fout`: `FILE *`, output file descriptor.
+- `pt`: `point_t *`, The list of points forming the path.
+- `n`: `int`, Number of points in the path
+- `abs`: `int`, If set to 1 the path starts at absolute position, otherwise a relative move command is issued and the path is traversed in the reverse direction.
+**Returns:**
+`int`, returns 0 upon successful completion
+
+#### `write_paths_opaque`
+```c
+static void write_paths_opaque(FILE *fout, potrace_path_t *tree);
+```
+Writes paths with opaque filling to the file in the form of SVG tags.
+- `fout`: `FILE *`, The output file stream.
+- `tree`: `potrace_path_t *`, A linked list of paths.
+
+#### `write_paths_transparent_rec`
+```c
+static void write_paths_transparent_rec(FILE *fout, potrace_path_t *tree);
+```
+Recursively writes paths to a file as an SVG tree structure, using relative moves, transparent rendering, and without fill.
+- `fout`: `FILE *`, The output file stream.
+- `tree`: `potrace_path_t *`, The linked list of paths.
+
+#### `write_paths_transparent`
+```c
+static void write_paths_transparent(FILE *fout, potrace_path_t *tree);
+```
+Writes paths in transparent mode to output stream.
+- `fout`: `FILE *`, Output file stream.
+- `tree`: `potrace_path_t *`, path structure.
 
 ### Backend
-#### `page_geojson`
+#### `page_svg`
 ```c
-int page_geojson(FILE *fout, potrace_path_t *plist, imginfo_t *imginfo);
+int page_svg(FILE *fout, potrace_path_t *plist, imginfo_t *imginfo);
 ```
-Produces GeoJSON output for the given path data.
+Main function for producing SVG output, by producing XML header, viewport, metadata and paths.
 - `fout`: `FILE *`, The output file stream.
-- `plist`: `potrace_path_t *`, The linked list of paths to output as GeoJSON.
-- `imginfo`: `imginfo_t *`, The image information, such as dimensions and transformations.
+- `plist`: `potrace_path_t *`, The list of paths to convert.
+- `imginfo`: `imginfo_t *`, The image information, such as dimensions and transformation.
 **Returns:**
-`int`, 0 on success, 1 if failed.
+`int`, Always returns 0.
+
+#### `page_gimp`
+```c
+int page_gimp(FILE *fout, potrace_path_t *plist, imginfo_t *imginfo);
+```
+Main function for producing a Gimp compatible SVG path output, by disabling `opaque` mode and setting grouping to `flat`, and calling `page_svg` method.
+- `fout`: `FILE *`, The output file stream.
+- `plist`: `potrace_path_t *`, The list of paths to convert.
+- `imginfo`: `imginfo_t *`, The image information, such as dimensions and transformation.
+**Returns:**
+`int`, Returns the result of `page_svg` method.
 
 
 ## File: backend_xfig.h
@@ -5365,9 +5620,11 @@ This header file defines the interface for the XFig backend of Potrace, providin
 int page_xfig(FILE *fout, potrace_path_t *plist, imginfo_t *imginfo);
 ```
 Generates the XFig output for the given paths.
-- `fout`: `FILE *`, Output file descriptor.
+- `fout`: `FILE *`, The output file stream.
 - `plist`: `potrace_path_t *`, List of paths to be output as xfig.
 - `imginfo`: `imginfo_t *`, Image information like dimensions, transformations.
+**Returns:**
+`int`, 0 on success or 1 on error with errno set.
 
 
 ## File: backend_xfig.c
@@ -5548,7 +5805,7 @@ Calculates the bulge factor based on two vectors v and w. The bulge factor corre
 - `v`: `dpoint_t`, The first vector.
 - `w`: `dpoint_t`, The second vector.
 **Returns**:
-`double`, The calculated bulge
+`double`, The calculated bulge, or 0.0 if the cross product of the vectors is 0.0.
 
 ### DXF Output Synthesis
 #### `ship`
@@ -5690,7 +5947,7 @@ Generates the GeoJSON output to the specified file.
 
 ## File: backend_geojson.c
 ```
-This file implements the GeoJSON backend for Potrace, which outputs traced paths as GeoJSON features.
+This file implements the GeoJSON backend of Potrace, which outputs traced paths as GeoJSON features.
 ```
 ### Includes
 - `config.h` (conditional): Provides configuration defines.
@@ -5710,94 +5967,100 @@ This file implements the GeoJSON backend for Potrace, which outputs traced paths
 ```c
 static inline double bezier(double t, double x0, double x1, double x2, double x3);
 ```
-Calculates a point on a 1-dimensional Bezier curve.
-- `t`: `double`, The parameter at which the curve position is evaluated.
-- `x0`: `double`, Starting point.
-- `x1`: `double`, First control point.
-- `x2`: `double`, Second control point.
-- `x3`: `double`, Ending point.
+Calculates a point on a 1-dimensional Bezier segment for curve approximation.
+- `t`: `double`, The parameter at which the curve is evaluated.
+- `x0`: `double`, The starting point.
+- `x1`: `double`, The first control point.
+- `x2`: `double`, The second control point.
+- `x3`: `double`, The ending point.
 **Returns**:
-`double`, The value of the Bezier curve at the parameter `t`.
+`double`, The coordinate of the Bezier curve at the parameter `t`.
 
 #### `round_to_unit`
 ```c
 static char *round_to_unit(double x);
 ```
-Rounds the given value according to the formatting configured in `set_format`.
-- `x`: `double`, The input floating-point number
-**Returns**:
-`char *`, The static allocated string with the number formated as configured.
+Formats the given double to a string with the current format specification. Returns one of a small number of statically allocated strings.
+- `x`: `double`, The value to format.
+**Returns:**
+`char *`, The formatted string, returned from a small number of statically allocated strings.
 
 #### `set_format`
 ```c
 static void set_format(trans_t tr);
 ```
-Selects and sets the appropriate format for printing floating points numbers in JSON output.
-- `tr`: `trans_t`, Transformation data including scaling factors
+Selects and sets the appropriate format for printing floating point numbers in JSON output.
+- `tr`: `trans_t`, Transformation parameters for extracting scaling factors
 
 ### Path-drawing Auxiliary Functions
 #### `geojson_moveto`
 ```c
 static void geojson_moveto(FILE *fout, dpoint_t p, trans_t tr);
 ```
-Writes a "moveTo" command to the output, applying the given transformation.
+Outputs a "moveTo" command to the given file for an SVG output.
 - `fout`: `FILE *`, The output file stream.
 - `p`: `dpoint_t`, The target coordinates.
 - `tr`: `trans_t`, The transformation to apply.
+**Returns:**
+`void`, this function does not return any value
 
 #### `geojson_lineto`
 ```c
 static void geojson_lineto(FILE *fout, dpoint_t p, trans_t tr);
 ```
-Writes a "lineTo" command to the output, applying the given transformation.
+Outputs a "lineTo" command to the given file for an SVG output.
 - `fout`: `FILE *`, The output file stream.
 - `p`: `dpoint_t`, The target coordinates.
 - `tr`: `trans_t`, The transformation to apply.
+**Returns:**
+`void`, this function does not return any value
 
 #### `geojson_curveto`
 ```c
 static void geojson_curveto(FILE *fout, dpoint_t p1, dpoint_t p2, dpoint_t p3, trans_t tr);
 ```
-Writes a simulated "curveTo" command to the output, approximating a Bezier curve.
+Simulates a curve-to command, approximating a Bezier curve with short lines, for geojson output.
 - `fout`: `FILE *`, The output file stream.
-- `p1`: `dpoint_t`, The first control point for the bezier curve.
-- `p2`: `dpoint_t`, The second control point for the bezier curve.
-- `p3`: `dpoint_t`, The end point for the bezier curve.
+- `p1`: `dpoint_t`, Coordinates of first control point of Bezier curve.
+- `p2`: `dpoint_t`, Coordinates of second control point of Bezier curve.
+- `p3`: `dpoint_t`, End point of Bezier curve.
 - `tr`: `trans_t`, The transformation to apply.
+**Returns:**
+`void`, this function does not return any value
 
 ### Path Conversion
 #### `geojson_path`
 ```c
 static int geojson_path(FILE *fout, potrace_curve_t *curve, trans_t tr);
 ```
-Converts the given `potrace_curve_t` data to GeoJSON path data, including bezier approximation.
+Converts a `potrace_curve_t` object into a GeoJSON polygon coordinate array format.
 - `fout`: `FILE *`, The output file stream.
-- `curve`: `potrace_curve_t *`, The curve data.
-- `tr`: `trans_t`, The transformation to apply.
-**Returns**:
-`int`, 0 on success.
+- `curve`: `potrace_curve_t *`, The curve object to convert
+- `tr`: `trans_t`, The coordinate transformation settings.
+**Returns:**
+`int` 0 on success
 
 #### `write_polygons`
 ```c
 static void write_polygons(FILE *fout, potrace_path_t *tree, trans_t tr, int first);
 ```
-Recursively write a tree of path objects to GeoJSON output.
-- `fout`: `FILE *`, The output file stream.
-- `tree`: `potrace_path_t *`, The top path node of the tree.
-- `tr`: `trans_t`, The transformation to apply.
-- `first`: `int`, Flag indicating whether it's the first element in the output.
+Recursively writes a tree of `potrace_path_t` into a GeoJSON structure
+- `fout`: `FILE *`, Output file stream
+- `tree`: `potrace_path_t *`, List of path items representing a tree
+- `tr`: `trans_t`, Transformation to apply to points
+- `first`: `int`, Whether it is first path (no leading comma)
 
 ### Backend
 #### `page_geojson`
 ```c
 int page_geojson(FILE *fout, potrace_path_t *plist, imginfo_t *imginfo);
 ```
-Implements the main function for writing a GeoJSON file.
+Produces GeoJSON output for the given path data.
 - `fout`: `FILE *`, The output file stream.
-- `plist`: `potrace_path_t *`, The linked list of path objects to convert.
-- `imginfo`: `imginfo_t *`, The image information, such as dimensions, and transformation data.
+- `plist`: `potrace_path_t *`, The linked list of paths to output as GeoJSON.
+- `imginfo`: `imginfo_t *`, The image information, such as dimensions and transformations.
 **Returns:**
-`int`, returns 0 on success, and non-zero on error.
+`int`, 0 on success, 1 if failed.
 
 
 # Utilities & Demos
