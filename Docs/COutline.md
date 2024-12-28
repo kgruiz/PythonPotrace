@@ -5,61 +5,61 @@
 
 
 - [Core](#core)
-  - [main.c](#mainc)
-  - [main.h](#mainh)
-  - [potracelib.c](#potracelibc)
-  - [potracelib.h](#potracelibh)
-  - [platform.h](#platformh)
-  - [getopt.c](#getoptc)
-  - [getopt1.c](#getopt1c)
-  - [include/getopt/getopt.h](#includegetoptgetopth)
-  - [getopt.h](#getopth)
+  - [main.c](#file-mainc)
+  - [main.h](#file-mainh)
+  - [potracelib.c](#file-potracelibc)
+  - [potracelib.h](#file-potracelibh)
+  - [platform.h](#file-platformh)
+  - [getopt.c](#file-getoptc)
+  - [getopt1.c](#file-getopt1c)
+  - [include/getopt/getopt.h](#file-includegetoptgetopth)
+  - [getopt.h](#file-getopth)
 - [Data Structures & Core Algorithms](#data-structures--core-algorithms)
-  - [auxiliary.h](#auxiliaryh)
-  - [bbox.h](#bboxh)
-  - [bbox.c](#bboxc)
-  - [bitmap.h](#bitmaph)
-  - [bitmap_io.h](#bitmap_ioh)
-  - [bitmap_io.c](#bitmap_ioc)
-  - [curve.h](#curveh)
-  - [curve.c](#curvec)
-  - [decompose.h](#decomposeh)
-  - [decompose.c](#decomposec)
-  - [trace.h](#traceh)
-  - [trace.c](#tracec)
-  - [lists.h](#listsh)
-  - [progress.h](#progressh)
-  - [progress_bar.h](#progress_barh)
-  - [progress_bar.c](#progress_barc)
-  - [lzw.h](#lzwh)
-  - [lzw.c](#lzwc)
-  - [flate.h](#flateh)
-  - [flate.c](#flatec)
-  - [render.h](#renderh)
-  - [render.c](#renderc)
-  - [bitops.h](#bitopsh)
-  - [trans.h](#transh)
-  - [trans.c](#transc)
-  - [greymap.h](#greymaph)
-  - [greymap.c](#greymapc)
+  - [auxiliary.h](#file-auxiliaryh)
+  - [bbox.h](#file-bboxh)
+  - [bbox.c](#file-bboxc)
+  - [bitmap.h](#file-bitmaph)
+  - [bitmap_io.h](#file-bitmap_ioh)
+  - [bitmap_io.c](#file-bitmap_ioc)
+  - [curve.h](#file-curveh)
+  - [curve.c](#file-curvec)
+  - [decompose.h](#file-decomposeh)
+  - [decompose.c](#file-decomposec)
+  - [trace.h](#file-traceh)
+  - [trace.c](#file-tracec)
+  - [lists.h](#file-listsh)
+  - [progress.h](#file-progressh)
+  - [progress_bar.h](#file-progress_barh)
+  - [progress_bar.c](#file-progress_barc)
+  - [lzw.h](#file-lzwh)
+  - [lzw.c](#file-lzwc)
+  - [flate.h](#file-flateh)
+  - [flate.c](#file-flatec)
+  - [render.h](#file-renderh)
+  - [render.c](#file-renderc)
+  - [bitops.h](#file-bitopsh)
+  - [trans.h](#file-transh)
+  - [trans.c](#file-transc)
+  - [greymap.h](#file-greymaph)
+  - [greymap.c](#file-greymapc)
 - [Backends (Output Formats)](#backends-output-formats)
-  - [backend_eps.h](#backend_epsh)
-  - [backend_eps.c](#backend_epsc)
-  - [backend_pdf.h](#backend_pdfh)
-  - [backend_pdf.c](#backend_pdfc)
-  - [backend_pgm.h](#backend_pgmh)
-  - [backend_pgm.c](#backend_pgmc)
-  - [backend_svg.h](#backend_svgh)
-  - [backend_svg.c](#backend_svgc)
-  - [backend_xfig.h](#backend_xfigh)
-  - [backend_xfig.c](#backend_xfigc)
-  - [backend_dxf.h](#backend_dxfh)
-  - [backend_dxf.c](#backend_dxfc)
-  - [backend_geojson.h](#backend_geojsonh)
-  - [backend_geojson.c](#backend_geojsonc)
+  - [backend_eps.h](#file-backend_epsh)
+  - [backend_eps.c](#file-backend_epsc)
+  - [backend_pdf.h](#file-backend_pdfh)
+  - [backend_pdf.c](#file-backend_pdfc)
+  - [backend_pgm.h](#file-backend_pgmh)
+  - [backend_pgm.c](#file-backend_pgmc)
+  - [backend_svg.h](#file-backend_svgh)
+  - [backend_svg.c](#file-backend_svgc)
+  - [backend_xfig.h](#file-backend_xfigh)
+  - [backend_xfig.c](#file-backend_xfigc)
+  - [backend_dxf.h](#file-backend_dxfh)
+  - [backend_dxf.c](#file-backend_dxfc)
+  - [backend_geojson.h](#file-backend_geojsonh)
+  - [backend_geojson.c](#file-backend_geojsonc)
 - [Utilities & Demos](#utilities--demos)
-  - [mkbitmap.c](#mkbitmapc)
-  - [potracelib_demo.c](#potracelib_democ)
+  - [mkbitmap.c](#file-mkbitmapc)
+  - [potracelib_demo.c](#file-potracelib_democ)
 
 
 # Core
@@ -1165,11 +1165,11 @@ This is the header file for getopt. It defines structs and functions that allow 
 ```c
 struct option
 {
-# if defined __STDC__ && __STDC__
+#if defined __STDC__ && __STDC__
   const char *name;
-# else
+#else
   char *name;
-# endif
+#endif
   /* has_arg can't be an enum because some compilers complain about
      type mismatches in all the code that assumes it is an int.  */
   int has_arg;
@@ -1186,19 +1186,19 @@ Structure defining a long option for parsing command-line arguments.
 ### Constants
 #### `no_argument`
 ```c
-# define no_argument		0
+#define no_argument		0
 ```
 Indicates that an option does not accept an argument.
 
 #### `required_argument`
 ```c
-# define required_argument	1
+#define required_argument	1
 ```
 Indicates that an option requires an argument.
 
 #### `optional_argument`
 ```c
-# define optional_argument	2
+#define optional_argument	2
 ```
 Indicates that an option can accept an optional argument.
 
@@ -1231,11 +1231,11 @@ Set to an option character which was unrecognized.
 #### `getopt`
 ```c
 #if defined __STDC__ && __STDC__
-# ifdef __GNU_LIBRARY__
+#ifdef __GNU_LIBRARY__
 extern int getopt (int argc, char *const *argv, const char *shortopts);
-# else
+#else
 extern int getopt ();
-# endif
+#endif
 #else
 extern int getopt ();
 #endif
@@ -1249,10 +1249,10 @@ Parses command-line arguments, used for short option parsing.
 
 #### `getopt_long`
 ```c
-# ifndef __need_getopt
+#ifndef __need_getopt
 extern int getopt_long (int argc, char *const *argv, const char *shortopts,
 		        const struct option *longopts, int *longind);
-# endif
+#endif
 ```
 Parses command-line arguments, supporting both short and long options.
 - `argc`: `int`, The number of command-line arguments.
@@ -1265,11 +1265,11 @@ Parses command-line arguments, supporting both short and long options.
 
 #### `getopt_long_only`
 ```c
-# ifndef __need_getopt
+#ifndef __need_getopt
 extern int getopt_long_only (int argc, char *const *argv,
 			     const char *shortopts,
 		             const struct option *longopts, int *longind);
-# endif
+#endif
 ```
 Parses command-line arguments, supporting both short and long options, and treating both "-" and "--" as long option prefixes.
 - `argc`: `int`, The number of command-line arguments.
@@ -1282,12 +1282,12 @@ Parses command-line arguments, supporting both short and long options, and treat
 
 #### `_getopt_internal`
 ```c
-# ifndef __need_getopt
+#ifndef __need_getopt
 extern int _getopt_internal (int argc, char *const *argv,
 			     const char *shortopts,
 		             const struct option *longopts, int *longind,
 			     int long_only);
-# endif
+#endif
 ```
 Internal only.  Users should not call this directly.
 - `argc`: `int`, The number of command-line arguments.
@@ -1312,11 +1312,11 @@ This is the header file for the getopt function and its related data structures,
 ```c
 struct option
 {
-# if defined __STDC__ && __STDC__
+#if defined __STDC__ && __STDC__
   const char *name;
-# else
+#else
   char *name;
-# endif
+#endif
   /* has_arg can't be an enum because some compilers complain about
      type mismatches in all the code that assumes it is an int.  */
   int has_arg;
@@ -1333,19 +1333,19 @@ Structure defining a long option for parsing command-line arguments.
 ### Constants
 #### `no_argument`
 ```c
-# define no_argument		0
+#define no_argument		0
 ```
 Indicates that an option does not accept an argument.
 
 #### `required_argument`
 ```c
-# define required_argument	1
+#define required_argument	1
 ```
 Indicates that an option requires an argument.
 
 #### `optional_argument`
 ```c
-# define optional_argument	2
+#define optional_argument	2
 ```
 Indicates that an option can accept an optional argument.
 
@@ -1378,11 +1378,11 @@ Set to an option character which was unrecognized.
 #### `getopt`
 ```c
 #if defined __STDC__ && __STDC__
-# ifdef __GNU_LIBRARY__
+#ifdef __GNU_LIBRARY__
 extern int getopt (int argc, char *const *argv, const char *shortopts);
-# else
+#else
 extern int getopt ();
-# endif
+#endif
 #else
 extern int getopt ();
 #endif
@@ -1396,10 +1396,10 @@ Parses command-line arguments, used for short option parsing.
 
 #### `getopt_long`
 ```c
-# ifndef __need_getopt
+#ifndef __need_getopt
 extern int getopt_long (int argc, char *const *argv, const char *shortopts,
 		        const struct option *longopts, int *longind);
-# endif
+#endif
 ```
 Parses command-line arguments, supporting both short and long options.
 - `argc`: `int`, The number of command-line arguments.
@@ -1412,11 +1412,11 @@ Parses command-line arguments, supporting both short and long options.
 
 #### `getopt_long_only`
 ```c
-# ifndef __need_getopt
+#ifndef __need_getopt
 extern int getopt_long_only (int argc, char *const *argv,
 			     const char *shortopts,
 		             const struct option *longopts, int *longind);
-# endif
+#endif
 ```
 Parses command-line arguments, supporting both short and long options, and treating both "-" and "--" as long option prefixes.
 - `argc`: `int`, The number of command-line arguments.
@@ -1429,12 +1429,12 @@ Parses command-line arguments, supporting both short and long options, and treat
 
 #### `_getopt_internal`
 ```c
-# ifndef __need_getopt
+#ifndef __need_getopt
 extern int _getopt_internal (int argc, char *const *argv,
 			     const char *shortopts,
 		             const struct option *longopts, int *longind,
 			     int long_only);
-# endif
+#endif
 ```
 Internal only.  Users should not call this directly.
 - `argc`: `int`, The number of command-line arguments.
