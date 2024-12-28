@@ -96,7 +96,7 @@ struct backend_s {
   int (*term_f)(FILE *fout);                 /* finalization function */
   int opticurve;    /* opticurve capable (true Bezier curves?) */
 };
-typedef struct backend_s backend_t;  
+typedef struct backend_s backend_t;
 
 static backend_t backend[] = {
   { "svg",        ".svg", 0, 0, 0,   NULL,     page_svg,     NULL,     1 },
@@ -128,10 +128,10 @@ static int backend_lookup(const char *name, backend_t **bp) {
     } else if (strncasecmp(backend[i].name, name, strlen(name))==0) {
       m++;
       b = &backend[i];
-    }      
+    }
   }
   /* if there was no exact match, and exactly one prefix match, use that */
-  if (m==1) {  
+  if (m==1) {
     *bp = b;
     return 0;
   } else if (m) {
@@ -165,7 +165,7 @@ static int backend_list(FILE *fout, int j, int linelen) {
 /* some info functions */
 
 static void license(FILE *f) {
-  fprintf(f, 
+  fprintf(f,
   "This program is free software; you can redistribute it and/or modify\n"
   "it under the terms of the GNU General Public License as published by\n"
   "the Free Software Foundation; either version 2 of the License, or\n"
@@ -364,13 +364,13 @@ static int parse_color(char *s) {
     }
   }
   return col;
-}  
+}
 
 /* ---------------------------------------------------------------------- */
 /* option processing */
 
 /* codes for options that don't have short form */
-enum { 
+enum {
   OPT_TIGHT = 300,
   OPT_FILLCOLOR,
   OPT_OPAQUE,
@@ -905,7 +905,7 @@ static void calc_dimensions(imginfo_t *imginfo, potrace_path_t *plist) {
     imginfo->width = imginfo->trans.bb[0];
     imginfo->height = imginfo->trans.bb[1] * info.stretch;
     default_scaling = 1;
-  } 
+  }
 
   /* apply scaling */
   trans_scale_to_size(&imginfo->trans, imginfo->width, imginfo->height);
@@ -922,14 +922,14 @@ static void calc_dimensions(imginfo_t *imginfo, potrace_path_t *plist) {
      further adjust the scaling to be the "best fit" for the given
      page size and margins. */
   if (default_scaling && info.backend->fixed) {
-    
+
     /* try to squeeze it between margins */
     maxwidth = UNDEF;
     maxheight = UNDEF;
-    
+
     if (imginfo->lmar != UNDEF && imginfo->rmar != UNDEF) {
       maxwidth = info.paperwidth - imginfo->lmar - imginfo->rmar;
-    } 
+    }
     if (imginfo->bmar != UNDEF && imginfo->tmar != UNDEF) {
       maxheight = info.paperheight - imginfo->bmar - imginfo->tmar;
     }
@@ -937,7 +937,7 @@ static void calc_dimensions(imginfo_t *imginfo, potrace_path_t *plist) {
       maxwidth = max(info.paperwidth - 144, info.paperwidth * 0.75);
       maxheight = max(info.paperheight - 144, info.paperheight * 0.75);
     }
-    
+
     if (maxwidth == UNDEF) {
       sc = maxheight / imginfo->trans.bb[1];
     } else if (maxheight == UNDEF) {
@@ -987,7 +987,7 @@ static void calc_dimensions(imginfo_t *imginfo, potrace_path_t *plist) {
 /* ---------------------------------------------------------------------- */
 /* auxiliary functions for file handling */
 
-/* open a file for reading. Return stdin if filename is NULL or "-" */ 
+/* open a file for reading. Return stdin if filename is NULL or "-" */
 static FILE *my_fopen_read(const char *filename) {
   if (filename == NULL || strcmp(filename, "-") == 0) {
     return stdin;
@@ -995,7 +995,7 @@ static FILE *my_fopen_read(const char *filename) {
   return fopen(filename, "rb");
 }
 
-/* open a file for writing. Return stdout if filename is NULL or "-" */ 
+/* open a file for writing. Return stdout if filename is NULL or "-" */
 static FILE *my_fopen_write(const char *filename) {
   if (filename == NULL || strcmp(filename, "-") == 0) {
     return stdout;
@@ -1046,9 +1046,9 @@ static char *make_outfilename(const char *infile, const char *ext) {
 /* Process one or more bitmaps from fin, and write the results to fout
    using the page_f function of the appropriate backend. */
 
-static void process_file(backend_t *b, const char *infile, const char *outfile, FILE *fin, FILE *fout) { 
-  int r; 
-  potrace_bitmap_t *bm = NULL; 
+static void process_file(backend_t *b, const char *infile, const char *outfile, FILE *fin, FILE *fout) {
+  int r;
+  potrace_bitmap_t *bm = NULL;
   imginfo_t imginfo;
   int eof_flag = 0;  /* to indicate premature eof */
   int count;         /* number of bitmaps successfully processed, this file */
@@ -1071,7 +1071,7 @@ static void process_file(backend_t *b, const char *infile, const char *outfile, 
       fprintf(stderr, "" POTRACE ": %s: empty file\n", infile);
       exit(2);
     case -4:  /* wrong magic */
-      if (count>0) { 
+      if (count>0) {
 	fprintf(stderr, "" POTRACE ": %s: warning: junk at end of file\n", infile);
 	return;
       }
@@ -1177,7 +1177,7 @@ int main(int ac, char *av[]) {
     fout = my_fopen_write(info.outfile);
     if (!fout) {
       fprintf(stderr, "" POTRACE ": %s: %s\n", info.outfile ? info.outfile : "stdout", strerror(errno));
-      exit(2); 
+      exit(2);
     }
     if (b->init_f) {
       TRY(b->init_f(fout));
@@ -1221,7 +1221,7 @@ int main(int ac, char *av[]) {
       free(outfile);
     }
     potrace_param_free(info.param);
-    return 0; 
+    return 0;
 
   } else {                                   /* infiles to single outfile */
 
@@ -1233,7 +1233,7 @@ int main(int ac, char *av[]) {
       fprintf(stderr, "" POTRACE ": cannot use empty list of input files with -o\n");
       exit(1);
     }
-    
+
     fout = my_fopen_write(info.outfile);
     if (!fout) {
       fprintf(stderr, "" POTRACE ": %s: %s\n", info.outfile, strerror(errno));
